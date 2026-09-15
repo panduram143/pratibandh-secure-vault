@@ -1,6 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiFolder, FiFile, FiAlertCircle, FiClock, FiPlus, FiUpload, FiSearch, FiBarChart2 } from 'react-icons/fi';
+import {
+  FiFolder,
+  FiFile,
+  FiAlertCircle,
+  FiClock,
+  FiPlus,
+  FiUpload,
+  FiSearch,
+  FiBarChart2,
+  FiShield,
+  FiActivity,
+  FiLock,
+  FiUserCheck,
+  FiExternalLink
+} from 'react-icons/fi';
+import { FaGithub } from 'react-icons/fa';
+import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 
@@ -41,117 +57,200 @@ function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-[#0b1c3d] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-gray-500 font-mono">Synchronizing National Evidence Vault...</p>
+        </div>
       </div>
     );
   }
 
   const statCards = [
-    { label: 'Total Cases', value: stats.totalCases, icon: FiFolder, color: 'bg-blue-50 text-blue-700' },
-    { label: 'Open Cases', value: stats.openCases, icon: FiAlertCircle, color: 'bg-green-50 text-green-700' },
-    { label: 'Documents', value: stats.documents, icon: FiFile, color: 'bg-purple-50 text-purple-700' },
-    { label: 'Pending Reviews', value: stats.pendingReviews, icon: FiClock, color: 'bg-orange-50 text-orange-700' },
+    { label: 'Active Investigation Cases', value: stats.totalCases, icon: FiFolder, color: 'bg-blue-50 text-blue-800 border-blue-200' },
+    { label: 'Open Urgent Cases', value: stats.openCases, icon: FiAlertCircle, color: 'bg-red-50 text-red-800 border-red-200' },
+    { label: 'Sealed Digital Evidences', value: stats.documents, icon: FiFile, color: 'bg-purple-50 text-purple-800 border-purple-200' },
+    { label: 'Under Review / Forensic', value: stats.pendingReviews, icon: FiClock, color: 'bg-amber-50 text-amber-800 border-amber-200' },
   ];
 
   const quickActions = [
-    { label: 'New Case', icon: FiPlus, link: '/cases/new', color: 'bg-primary hover:bg-secondary' },
-    { label: 'Upload Document', icon: FiUpload, link: '/documents/upload', color: 'bg-secondary hover:bg-primary' },
-    { label: 'Search', icon: FiSearch, link: '/search', color: 'bg-gray-700 hover:bg-gray-800' },
+    { label: 'Create Investigation Case', icon: FiPlus, link: '/cases/new', color: 'bg-[#0b1c3d] hover:bg-[#16356e]' },
+    { label: 'Upload Digital Evidence', icon: FiUpload, link: '/documents/upload', color: 'bg-emerald-700 hover:bg-emerald-600' },
+    { label: 'AI ID Card Verification', icon: BiBarcodeReader, link: '/login', color: 'bg-blue-700 hover:bg-blue-600' },
+    { label: 'Audit Trail & Per-Name Chart', icon: FiActivity, link: '/audit', color: 'bg-[#d4af37] text-gray-950 font-bold hover:bg-[#c5a030]' },
   ];
 
   const maxCount = Math.max(...casesByType.map(c => c.count), 1);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="fade-in">
-        <h1 className="text-2xl font-bold text-dark mb-1">
-          Welcome back, {user?.name}
-        </h1>
-        <p className="text-gray-600">
-          {user?.role?.toUpperCase()} | {user?.station || user?.department}
-        </p>
+    <div className="space-y-6 font-sans text-gray-800">
+      {/* Official Government Greeting Header */}
+      <div className="bg-gradient-to-r from-[#0a1b38] via-[#102b59] to-[#0a1b38] text-white p-6 rounded-2xl border border-[#1e3e78] shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] text-[10px] font-bold tracking-widest uppercase flex items-center gap-1">
+                <FiShield className="w-3 h-3" /> OFFICIAL INVESTIGATION WORKSPACE
+              </span>
+              <span className="text-xs text-gray-300 font-mono">
+                OUTR NODE #2026
+              </span>
+            </div>
+
+            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              Welcome, {user?.name || 'Authorized Officer'}
+            </h1>
+
+            <p className="text-xs text-gray-300 mt-1 flex items-center gap-2 font-mono">
+              <span>DESIGNATION: {user?.role?.replace('_', ' ').toUpperCase()}</span>
+              <span>•</span>
+              <span>REGD NO: {user?.formNumber || '25110377'}</span>
+              <span>•</span>
+              <span>STATION: {user?.station || 'OUTR Bhubaneswar'}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://github.com/soyam-panda"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 flex items-center gap-2 transition-all group"
+            >
+              <FaGithub className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+              <span>Project GitHub</span>
+              <FiExternalLink className="w-3 h-3 text-blue-300" />
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 fade-in">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+          <div
+            key={stat.label}
+            className={`bg-white rounded-xl p-5 shadow-sm border ${stat.color.split(' ')[2]} relative overflow-hidden transition-all hover:shadow-md`}
+          >
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${stat.color}`}>
-                <stat.icon size={20} />
+              <div className={`p-2.5 rounded-xl ${stat.color.split(' ')[0]} ${stat.color.split(' ')[1]}`}>
+                <stat.icon size={22} />
               </div>
+              <span className="text-[10px] font-mono font-bold text-gray-400 uppercase">
+                GOV-SEC
+              </span>
             </div>
-            <div className="text-3xl font-bold text-dark mb-1">{stat.value}</div>
-            <div className="text-sm text-gray-500">{stat.label}</div>
+            <div className="text-3xl font-black text-gray-900 mb-1 font-mono">{stat.value}</div>
+            <div className="text-xs font-medium text-gray-600">{stat.label}</div>
           </div>
         ))}
       </div>
 
+      {/* Main Grid: Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-4">
-            <FiClock className="mr-2 text-primary" size={20} />
-            <h2 className="text-lg font-semibold text-dark">Recent Activity</h2>
+        {/* Recent Activity Ledger */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-blue-50 text-[#0b1c3d]">
+                <FiClock className="w-5 h-5" />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Recent Audit Activity</h2>
+                <p className="text-xs text-gray-500">Live timestamped access events</p>
+              </div>
+            </div>
+            <Link
+              to="/audit"
+              className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 hover:underline"
+            >
+              View Full Audit Chart →
+            </Link>
           </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
             {recentActivity.length === 0 ? (
-              <p className="text-gray-500 text-sm">No recent activity</p>
+              <p className="text-gray-400 text-xs text-center py-6">No recent audit events recorded</p>
             ) : (
               recentActivity.map((log, idx) => (
-                <div key={idx} className="flex items-start border-l-2 border-gray-200 pl-3 py-2">
-                  <div className="flex-1">
-                    <p className="text-sm text-dark">
-                      <span className="font-medium">{log.user?.name || 'Unknown'}</span>{' '}
-                      <span className="text-gray-600">{log.action}</span>{' '}
-                      <span className="font-medium">{log.resource}</span>
+                <div
+                  key={idx}
+                  className="flex items-start justify-between p-3 rounded-xl bg-gray-50/80 border border-gray-100 hover:bg-blue-50/30 transition-all text-xs"
+                >
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-gray-900">
+                      <strong className="text-blue-900 font-semibold">{log.user?.name || 'OFFICER'}</strong>{' '}
+                      <span className="text-gray-500">performed</span>{' '}
+                      <span className="font-bold uppercase text-gray-800">{log.action}</span>{' '}
+                      <span className="text-gray-600 font-mono">({log.resource || log.resourceType || 'Evidence'})</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(log.timestamp).toLocaleString()}
+                    <p className="text-[11px] text-gray-400 font-mono">
+                      {new Date(log.timestamp).toLocaleString('en-IN')}
                     </p>
                   </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-green-100 text-green-800 border border-green-200">
+                    SEALED
+                  </span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center mb-4">
-            <FiPlus className="mr-2 text-primary" size={20} />
-            <h2 className="text-lg font-semibold text-dark">Quick Actions</h2>
+        {/* Quick Actions Panel */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+            <span className="p-1.5 rounded-lg bg-[#d4af37]/20 text-[#96791d]">
+              <FiShield className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Quick Operations</h2>
+              <p className="text-xs text-gray-500">One-click enforcement tools</p>
+            </div>
           </div>
-          <div className="space-y-3">
+
+          <div className="space-y-2.5">
             {quickActions.map((action) => (
               <Link
                 key={action.label}
                 to={action.link}
-                className={`flex items-center ${action.color} text-white px-4 py-3 rounded-lg transition-colors`}
+                className={`flex items-center justify-between ${action.color} text-white px-4 py-3 rounded-xl transition-all shadow-sm font-semibold text-xs group`}
               >
-                <action.icon className="mr-3" size={18} />
-                <span className="font-medium">{action.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <action.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>{action.label}</span>
+                </div>
+                <span>→</span>
               </Link>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-        <div className="flex items-center mb-4">
-          <FiBarChart2 className="mr-2 text-primary" size={20} />
-          <h2 className="text-lg font-semibold text-dark">Cases by Crime Type</h2>
+      {/* Cases by Crime Category */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+          <span className="p-1.5 rounded-lg bg-blue-50 text-[#0b1c3d]">
+            <FiBarChart2 className="w-5 h-5" />
+          </span>
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Cases by Legal Category</h2>
+            <p className="text-xs text-gray-500">Distribution across statutory crime classifications</p>
+          </div>
         </div>
-        <div className="space-y-3">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {casesByType.length === 0 ? (
-            <p className="text-gray-500 text-sm">No data available</p>
+            <p className="text-gray-400 text-xs col-span-2">No categorized cases currently in repository</p>
           ) : (
             casesByType.map((item) => (
-              <div key={item._id}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 font-medium">{item._id || 'Unknown'}</span>
-                  <span className="text-gray-600">{item.count}</span>
+              <div key={item._id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-800 font-bold uppercase">{item._id || 'Standard Forensic Case'}</span>
+                  <span className="text-gray-600 font-mono font-bold">{item.count} Cases</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
+                    className="bg-[#0b1c3d] h-2 rounded-full transition-all duration-500"
                     style={{ width: `${(item.count / maxCount) * 100}%` }}
                   ></div>
                 </div>

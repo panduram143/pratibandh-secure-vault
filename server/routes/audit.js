@@ -12,7 +12,7 @@ router.get('/recent', async (req, res) => {
         const { limit = 10 } = req.query;
 
         const logs = await AuditLog.find()
-            .populate('user', 'name email formNumber badgeId')
+            .populate('user', 'name email formNumber badgeId role department station')
             .sort({ timestamp: -1 })
             .limit(parseInt(limit));
 
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
         }
 
         const logs = await AuditLog.find(filter)
-            .populate('user', 'name email formNumber badgeId')
+            .populate('user', 'name email formNumber badgeId role department station')
             .sort({ timestamp: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
@@ -60,6 +60,68 @@ router.get('/', async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+// GET /api/audit/user-stats - Aggregated activity count per user (times opened/viewed/modified)
+router.get('/user-stats', async (req, res) => {
+    try {
+        const stats = await AuditLog.aggregate([
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'user',
+                    foreignField: '_id',
+                    as: 'userInfo'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$userInfo',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$user',
+                    name: { $first: '$userInfo.name' },
+                    email: { $first: '$userInfo.email' },
+                    formNumber: { $first: '$userInfo.formNumber' },
+                    role: { $first: '$userInfo.role' },
+                    department: { $first: '$userInfo.department' },
+                    station: { $first: '$userInfo.station' },
+                    totalActions: { $sum: 1 },
+                    timesOpened: {
+                        $sum: {
+                            $cond: [{ $in: ['$action', ['view', 'download', 'login']] }, 1, 0]
+                        }
+                    },
+                    views: {
+                        $sum: { $cond: [{ $eq: ['$action', 'view'] }, 1, 0] }
+                    },
+                    downloads: {
+                        $sum: { $cond: [{ $eq: ['$action', 'download'] }, 1, 0] }
+                    },
+                    logins: {
+                        $sum: { $cond: [{ $eq: ['$action', 'login'] }, 1, 0] }
+                    },
+                    modifications: {
+                        $sum: {
+                            $cond: [{ $in: ['$action', ['edit', 'upload', 'delete', 'share']] }, 1, 0]
+                        }
+                    },
+                    lastActivity: { $max: '$timestamp' }
+                }
+            },
+            {
+                $sort: { totalActions: -1 }
+            }
+        ]);
+
+        res.json({ stats });
+    } catch (err) {
+        console.error('Audit user stats error:', err);
+        res.status(500).json({ msg: 'Server error calculating user audit statistics' });
     }
 });
 
