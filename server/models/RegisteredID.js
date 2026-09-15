@@ -44,18 +44,14 @@ const registeredIDSchema = new mongoose.Schema({
     },
     faceDescriptor: {
         type: [Number],
-        required: [true, 'Face descriptor vector is required'],
-        validate: {
-            validator: function (v) {
-                return Array.isArray(v) && v.length === 128;
-            },
-            message: 'Face descriptor must be a 128-dimensional vector'
-        }
+        required: false,
+        default: []
     },
     addedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false,
+        default: null
     },
     isActive: {
         type: Boolean,

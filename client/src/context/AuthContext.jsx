@@ -35,6 +35,24 @@ export function AuthProvider({ children }) {
     verifyToken();
   }, []);
 
+  const idCardLogin = async (matchPayload) => {
+    try {
+      const res = await api.post('/auth/id-card-login', matchPayload);
+      const { token: newToken, user: userData, matchScore } = res.data;
+
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setToken(newToken);
+      setUser(userData);
+      toast.success(`Identity Verified: Welcome ${userData.name}!`);
+      return true;
+    } catch (err) {
+      const msg = err.response?.data?.msg || err.response?.data?.message || 'ID Card verification failed';
+      toast.error(msg);
+      return false;
+    }
+  };
+
   const faceLogin = async (formNumber, faceDescriptor) => {
     try {
       const res = await api.post('/auth/face-login', {
@@ -56,16 +74,20 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (emailOrIdentifier, password) => {
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const payload = typeof emailOrIdentifier === 'object'
+        ? emailOrIdentifier
+        : { email: emailOrIdentifier, formNumber: emailOrIdentifier, password };
+      if (!payload.password && password) payload.password = password;
+      const res = await api.post('/auth/login', payload);
       const { token: newToken, user: userData } = res.data;
 
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userData));
       setToken(newToken);
       setUser(userData);
-      toast.success('Login successful');
+      toast.success(`Login successful! Welcome ${userData.name}`);
       return true;
     } catch (err) {
       const msg = err.response?.data?.msg || err.response?.data?.message || 'Login failed';
@@ -101,7 +123,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, faceLogin, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, idCardLogin, faceLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

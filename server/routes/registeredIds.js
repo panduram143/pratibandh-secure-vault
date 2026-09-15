@@ -41,6 +41,14 @@ const upload = multer({
     }
 });
 
+// Pre-defined Sample OUTR Cards
+const SAMPLE_RECORDS = [
+    { formNumber: '25110377', name: 'Soyam Prakash Panda', email: 'soyam.25110377@outr.ac.in', role: 'super_admin', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110335', name: 'Chitra Adyasha Panda', email: 'chitra.25110335@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110367', name: 'S Kuldeep', email: 'kuldeep.25110367@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110378', name: 'Soyam Sambit Sahoo', email: 'soyam_sambit.25110378@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' }
+];
+
 // GET /api/registered-ids/verify/:formNumber (PUBLIC for Login Step 1)
 router.get('/verify/:formNumber', async (req, res) => {
     try {
@@ -49,10 +57,35 @@ router.get('/verify/:formNumber', async (req, res) => {
             return res.status(400).json({ msg: 'Form number is required' });
         }
 
-        const registered = await RegisteredID.findOne({
-            formNumber: formNumber.trim().toUpperCase(),
+        const cleanForm = formNumber.trim().toUpperCase();
+        const digitsMatch = cleanForm.match(/\d{6,10}/);
+        const digits = digitsMatch ? digitsMatch[0] : null;
+
+        let registered = await RegisteredID.findOne({
+            $or: [
+                { formNumber: cleanForm },
+                ...(digits ? [{ formNumber: new RegExp(digits, 'i') }] : [])
+            ],
             isActive: true
-        }).select('formNumber name role station department');
+        }).select('formNumber name role station department faceDescriptor');
+
+        if (!registered) {
+            const sample = SAMPLE_RECORDS.find(s => s.formNumber === cleanForm || (digits && s.formNumber === digits));
+            if (sample) {
+                registered = new RegisteredID({
+                    formNumber: sample.formNumber,
+                    name: sample.name,
+                    email: sample.email,
+                    role: sample.role,
+                    station: sample.station,
+                    department: sample.department,
+                    phone: '+91 9876543210',
+                    idCardImage: `sample_ids/${sample.formNumber}.jpeg`,
+                    isActive: true
+                });
+                await registered.save();
+            }
+        }
 
         if (!registered) {
             return res.status(404).json({
