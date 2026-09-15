@@ -16,7 +16,6 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
         minlength: 6
     },
     role: {
@@ -25,6 +24,13 @@ const userSchema = new mongoose.Schema({
         default: 'officer'
     },
     station: String, // police station name
+    formNumber: {
+        type: String,
+        unique: true,
+        sparse: true,
+        uppercase: true,
+        trim: true
+    },
     badgeId: {
         type: String,
         unique: true,

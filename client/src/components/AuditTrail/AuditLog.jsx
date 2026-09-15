@@ -146,7 +146,7 @@ function AuditLog() {
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider">
                   <th className="p-3">Timestamp (IST)</th>
                   <th className="p-3">User / Officer</th>
-                  <th className="p-3">Badge ID</th>
+                  <th className="p-3">Form No</th>
                   <th className="p-3">Action</th>
                   <th className="p-3">Resource Target</th>
                   <th className="p-3">Details / Hash</th>
@@ -162,7 +162,7 @@ function AuditLog() {
                     <td className="p-3 font-sans font-medium text-dark">
                       {log.user?.name || log.userId || 'SYSTEM_DAEMON'}
                     </td>
-                    <td className="p-3 text-gray-600">{log.user?.badgeId || 'AUTO'}</td>
+                    <td className="p-3 text-gray-600">{log.user?.formNumber || log.user?.badgeId || 'AUTO'}</td>
                     <td className="p-3 whitespace-nowrap font-sans">{getActionBadge(log.action)}</td>
                     <td className="p-3 font-sans text-gray-700">{log.resource}</td>
                     <td className="p-3 text-gray-500 truncate max-w-xs" title={log.details || log.hash}>

@@ -8,11 +8,14 @@ import {
   FiShield,
   FiUsers,
   FiSettings,
+  FiUserCheck,
 } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 
 function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'station_admin' || user?.formNumber === '25110377' || user?.badgeId === '25110377';
 
   const navItems = [
     { label: 'Dashboard', icon: FiGrid, path: '/' },
@@ -20,6 +23,7 @@ function Sidebar({ isOpen, onClose }) {
     { label: 'Documents', icon: FiFile, path: '/documents' },
     { label: 'Upload', icon: FiUpload, path: '/documents/upload' },
     { label: 'Search', icon: FiSearch, path: '/search' },
+    { label: 'Personnel', icon: FiUserCheck, path: '/admin/personnel', adminOnly: true },
     { label: 'Audit Trail', icon: FiShield, path: '/audit', adminOnly: true },
     { label: 'Collaboration', icon: FiUsers, path: '/collaboration' },
     { label: 'Settings', icon: FiSettings, path: '#' },
@@ -43,7 +47,7 @@ function Sidebar({ isOpen, onClose }) {
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-2">
             {navItems.map((item) => {
-              if (item.adminOnly && user?.role !== 'admin' && user?.role !== 'super_admin' && user?.role !== 'station_admin') return null;
+              if (item.adminOnly && !isAdmin) return null;
 
               const Icon = item.icon;
               return (

@@ -29,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/registered-ids', require('./routes/registeredIds'));
 app.use('/api/cases', require('./routes/cases'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/audit', require('./routes/audit'));

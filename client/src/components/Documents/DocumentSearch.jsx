@@ -74,7 +74,7 @@ function DocumentSearch() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by keyword, suspect name, case ID, or badge number..."
+            placeholder="Search by keyword, suspect name, case ID, or form number..."
             className="w-full px-4 py-3 text-base text-dark bg-white focus:outline-none"
           />
           <button

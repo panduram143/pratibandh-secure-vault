@@ -41,7 +41,15 @@ function Login() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-6">Officer Login</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-800">Password Fallback Login</h3>
+            <Link
+              to="/login"
+              className="text-xs text-primary hover:underline font-semibold bg-blue-50 px-2.5 py-1 rounded"
+            >
+              ← AI ID Card Login
+            </Link>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -86,11 +94,8 @@ function Login() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              New officer?{' '}
-              <Link to="/register" className="text-primary hover:underline font-medium">
-                Register here
-              </Link>
+            <p className="text-xs text-gray-500">
+              Accounts must be pre-registered by a System Administrator with an authorized ID card.
             </p>
           </div>
         </div>

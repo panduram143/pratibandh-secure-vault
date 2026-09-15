@@ -35,6 +35,27 @@ export function AuthProvider({ children }) {
     verifyToken();
   }, []);
 
+  const faceLogin = async (formNumber, faceDescriptor) => {
+    try {
+      const res = await api.post('/auth/face-login', {
+        formNumber,
+        faceDescriptor
+      });
+      const { token: newToken, user: userData, matchScore } = res.data;
+
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setToken(newToken);
+      setUser(userData);
+      toast.success(`Identity Verified! Welcome ${userData.name} (${matchScore || '100%'} match)`);
+      return true;
+    } catch (err) {
+      const msg = err.response?.data?.msg || err.response?.data?.message || 'Biometric verification failed';
+      toast.error(msg);
+      return false;
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const res = await api.post('/auth/login', { email, password });
@@ -80,7 +101,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, faceLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

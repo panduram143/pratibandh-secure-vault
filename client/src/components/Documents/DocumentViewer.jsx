@@ -190,7 +190,7 @@ function DocumentViewer() {
     ctx.font = `bold ${14 * zoom}px Inter, sans-serif`;
     ctx.fillStyle = 'rgba(198, 40, 40, 0.15)';
 
-    const watermarkText = `CONFIDENTIAL • ${user?.name?.toUpperCase() || 'OFFICER'} • BADGE: ${user?.badgeId || 'ID-7821'} • ${new Date().toISOString()}`;
+    const watermarkText = `CONFIDENTIAL • ${user?.name?.toUpperCase() || 'OFFICER'} • FORM: ${user?.formNumber || user?.badgeId || 'FORM-7821'} • ${new Date().toISOString()}`;
 
     for (let x = -width; x < width * 2; x += 350 * zoom) {
       for (let y = -height; y < height * 2; y += 140 * zoom) {
@@ -307,7 +307,7 @@ function DocumentViewer() {
           <FiAlertTriangle className="mr-2 text-amber-600 flex-shrink-0" size={16} />
           <span>
             <strong>CONFIDENTIAL ACCESS:</strong> Dynamic forensic watermark active for{' '}
-            <strong>{user?.name}</strong> (Badge: {user?.badgeId || 'N/A'}). Screenshots and downloads are strictly prohibited and logged.
+            <strong>{user?.name}</strong> (Form No: {user?.formNumber || user?.badgeId || 'N/A'}). Screenshots and downloads are strictly prohibited and logged.
           </span>
         </div>
         <div className="flex items-center space-x-1 font-mono text-[10px] text-amber-700">

@@ -12,7 +12,7 @@ router.get('/recent', async (req, res) => {
         const { limit = 10 } = req.query;
 
         const logs = await AuditLog.find()
-            .populate('user', 'name email badgeId')
+            .populate('user', 'name email formNumber badgeId')
             .sort({ timestamp: -1 })
             .limit(parseInt(limit));
 
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
         }
 
         const logs = await AuditLog.find(filter)
-            .populate('user', 'name email badgeId')
+            .populate('user', 'name email formNumber badgeId')
             .sort({ timestamp: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));

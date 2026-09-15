@@ -27,8 +27,9 @@ const seedData = async () => {
                 name: 'Inspector Rajesh Sharma',
                 email: 'rajesh.sharma@police.gov.in',
                 password: passwordHash,
-                role: 'investigator',
+                role: 'officer',
                 station: 'Central Police Station, Delhi',
+                formNumber: 'DL-IND-4081',
                 badgeId: 'DL-IND-4081',
                 department: 'Homicide & Special Crimes',
                 phone: '+91 9876543210'
@@ -37,8 +38,9 @@ const seedData = async () => {
                 name: 'ACP Priya Patel',
                 email: 'priya.patel@police.gov.in',
                 password: passwordHash,
-                role: 'admin',
+                role: 'super_admin',
                 station: 'Central Police Station, Delhi',
+                formNumber: 'DL-ACP-1002',
                 badgeId: 'DL-ACP-1002',
                 department: 'Cyber & Forensics Directorate',
                 phone: '+91 9876543211'
@@ -47,8 +49,9 @@ const seedData = async () => {
                 name: 'Dr. Vivek Menon',
                 email: 'vivek.menon@forensics.gov.in',
                 password: passwordHash,
-                role: 'forensic_analyst',
+                role: 'forensic_expert',
                 station: 'Central Forensic Science Lab (CFSL)',
+                formNumber: 'CFSL-DOC-892',
                 badgeId: 'CFSL-DOC-892',
                 department: 'Digital & Chemical Forensics',
                 phone: '+91 9876543212'
@@ -59,6 +62,7 @@ const seedData = async () => {
                 password: passwordHash,
                 role: 'officer',
                 station: 'South District Station, Mumbai',
+                formNumber: 'MH-SI-6029',
                 badgeId: 'MH-SI-6029',
                 department: 'Law & Order',
                 phone: '+91 9876543213'

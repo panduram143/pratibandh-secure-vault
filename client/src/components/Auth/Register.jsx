@@ -13,7 +13,7 @@ function Register() {
     confirmPassword: '',
     role: 'officer',
     station: '',
-    badgeId: '',
+    formNumber: '',
     department: '',
     phone: '',
   });
@@ -141,18 +141,18 @@ function Register() {
               </div>
 
               <div>
-                <label htmlFor="badgeId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Badge ID
+                <label htmlFor="formNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Form No
                 </label>
                 <input
                   type="text"
-                  id="badgeId"
-                  name="badgeId"
-                  value={formData.badgeId}
+                  id="formNumber"
+                  name="formNumber"
+                  value={formData.formNumber}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Badge number"
+                  placeholder="Form number"
                 />
               </div>
 

@@ -38,7 +38,7 @@ router.get('/search', async (req, res) => {
         const cases = await Case.find({
             $text: { $search: q }
         }).populate('createdBy', 'name email')
-          .populate('assignedOfficers', 'name badgeId')
+          .populate('assignedOfficers', 'name formNumber badgeId')
           .limit(20);
 
         res.json(cases);
@@ -91,7 +91,7 @@ router.get('/', async (req, res) => {
 
         const cases = await Case.find(filter)
             .populate('createdBy', 'name email')
-            .populate('assignedOfficers', 'name badgeId')
+            .populate('assignedOfficers', 'name formNumber badgeId')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
@@ -115,7 +115,7 @@ router.get('/:id', async (req, res) => {
     try {
         const caseDoc = await Case.findById(req.params.id)
             .populate('createdBy', 'name email role')
-            .populate('assignedOfficers', 'name email badgeId')
+            .populate('assignedOfficers', 'name email formNumber badgeId')
             .populate('sharedWith.grantedBy', 'name');
 
         if (!caseDoc) {
