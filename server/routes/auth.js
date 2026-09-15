@@ -11,69 +11,51 @@ const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'pratibandh_jwt_secret_dev_key_2026', { expiresIn: '24h' });
 };
 
-// Calculate Euclidean distance between two 128-d face descriptors
-function calculateEuclideanDistance(desc1, desc2) {
-    if (!desc1 || !desc2) {
-        return Infinity;
-    }
-    const arr1 = Array.isArray(desc1) ? desc1 : Object.values(desc1);
-    const arr2 = Array.isArray(desc2) ? desc2 : Object.values(desc2);
-    if (arr1.length !== 128 || arr2.length !== 128) {
-        return Infinity;
-    }
-    let sum = 0;
-    for (let i = 0; i < 128; i++) {
-        const diff = arr1[i] - arr2[i];
-        sum += diff * diff;
-    }
-    return Math.sqrt(sum);
-}
-
-const SAMPLE_RECORDS = [
-    { formNumber: '25110377', name: 'Soyam Prakash Panda', email: 'soyam.25110377@outr.ac.in', role: 'super_admin', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar', image: '/sample_ids/soyam_prakash.jpeg' },
-    { formNumber: '25110335', name: 'Chitra Adyasha Panda', email: 'chitra.25110335@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar', image: '/sample_ids/chitra.jpeg' },
-    { formNumber: '25110367', name: 'S Kuldeep', email: 'kuldeep.25110367@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar', image: '/sample_ids/kuldeep.jpeg' },
-    { formNumber: '25110378', name: 'Soyam Sambit Sahoo', email: 'soyam_sambit.25110378@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar', image: '/sample_ids/soyam_sambit.jpeg' }
+// Registered personnel bio-data in system
+const REGISTERED_BIO_DATA = [
+    { formNumber: '25110377', name: 'Soyam Prakash Panda', email: 'soyam.25110377@outr.ac.in', role: 'super_admin', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110335', name: 'Chitra Adyasha Panda', email: 'chitra.25110335@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110367', name: 'S Kuldeep', email: 'kuldeep.25110367@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' },
+    { formNumber: '25110378', name: 'Soyam Sambit Sahoo', email: 'soyam_sambit.25110378@outr.ac.in', role: 'officer', department: 'Computer Science and Engineering', station: 'OUTR Bhubaneswar' }
 ];
 
-// Helper: Sync sample records to DB safely
-async function ensureSampleRecordsSeeded() {
+// Helper: Ensure official personnel bio-data records are seeded in DB
+async function ensureBioDataSeeded() {
     try {
-        for (const sample of SAMPLE_RECORDS) {
-            let existing = await RegisteredID.findOne({ formNumber: sample.formNumber });
+        for (const data of REGISTERED_BIO_DATA) {
+            let existing = await RegisteredID.findOne({ formNumber: data.formNumber });
             if (!existing) {
                 existing = new RegisteredID({
-                    formNumber: sample.formNumber,
-                    name: sample.name,
-                    email: sample.email,
-                    role: sample.role,
-                    station: sample.station,
-                    department: sample.department,
+                    formNumber: data.formNumber,
+                    name: data.name,
+                    email: data.email,
+                    role: data.role,
+                    station: data.station,
+                    department: data.department,
                     phone: '+91 9876543210',
-                    idCardImage: sample.image,
                     faceDescriptor: [],
                     isActive: true
                 });
                 await existing.save();
             }
 
-            // Sync User account with default password Admin@123
+            // Sync User account
             let user = await User.findOne({
                 $or: [
-                    { formNumber: sample.formNumber },
-                    { email: sample.email.toLowerCase() }
+                    { formNumber: data.formNumber },
+                    { email: data.email.toLowerCase() }
                 ]
             });
             if (!user) {
                 user = new User({
-                    name: sample.name,
-                    email: sample.email.toLowerCase(),
+                    name: data.name,
+                    email: data.email.toLowerCase(),
                     password: 'Admin@123',
-                    role: sample.role,
-                    station: sample.station,
-                    department: sample.department,
-                    formNumber: sample.formNumber,
-                    badgeId: sample.formNumber,
+                    role: data.role,
+                    station: data.station,
+                    department: data.department,
+                    formNumber: data.formNumber,
+                    badgeId: data.formNumber,
                     phone: '+91 9876543210',
                     isActive: true
                 });
@@ -81,19 +63,19 @@ async function ensureSampleRecordsSeeded() {
             }
         }
     } catch (err) {
-        console.warn('Sample records sync notice:', err.message);
+        console.warn('Bio-data sync notice:', err.message);
     }
 }
 
-// POST /api/auth/match-id-card (INTELLIGENT AI ID & BIO-DATA MATCHING)
+// POST /api/auth/match-id-card (AI SCAN & BIO-DATA MATCHING)
 router.post('/match-id-card', async (req, res) => {
     try {
-        let { formNumber, cardFaceDescriptor, extractedName, rawText, barcode } = req.body;
+        let { formNumber, extractedName, rawText, barcode } = req.body;
 
-        await ensureSampleRecordsSeeded();
+        await ensureBioDataSeeded();
         let activeCards = await RegisteredID.find({ isActive: true });
 
-        // Concatenate all available text tokens for holistic scanning
+        // Concatenate all extracted tokens from scanned card
         const combinedText = [
             formNumber || '',
             barcode || '',
@@ -104,9 +86,8 @@ router.post('/match-id-card', async (req, res) => {
         let matchedCard = null;
         let matchMethod = 'formNumber';
         let matchScore = 95;
-        let biometricMatchDist = null;
 
-        // 1. Check direct registration number match against active cards
+        // 1. Direct registration / form number matching
         for (const card of activeCards) {
             const cardNum = (card.formNumber || '').toUpperCase();
             if (!cardNum) continue;
@@ -128,7 +109,7 @@ router.post('/match-id-card', async (req, res) => {
             }
         }
 
-        // 2. OCR Typo Correction on Combined Text (O->0, I/l->1, S->5, B->8, Z->2)
+        // 2. OCR Typo Correction on Scanned Text (O->0, I/l->1, S->5, B->8, Z->2)
         if (!matchedCard) {
             const typoCorrectedText = combinedText
                 .replace(/O/g, '0')
@@ -166,68 +147,17 @@ router.post('/match-id-card', async (req, res) => {
             }
         }
 
-        // 4. Biometric Face Descriptor matching (cross-verify card photo vector with registered bio-data photo)
-        if (cardFaceDescriptor) {
-            let parsedDescriptor = cardFaceDescriptor;
-            if (typeof cardFaceDescriptor === 'string') {
-                try { parsedDescriptor = JSON.parse(cardFaceDescriptor); } catch (e) {}
-            }
-            if (parsedDescriptor && typeof parsedDescriptor === 'object' && !Array.isArray(parsedDescriptor)) {
-                parsedDescriptor = Object.values(parsedDescriptor);
-            }
-
-            if (Array.isArray(parsedDescriptor) && parsedDescriptor.length === 128) {
-                let bestCard = null;
-                let minDistance = Infinity;
-
-                for (const card of activeCards) {
-                    let cardDesc = card.faceDescriptor;
-                    if (cardDesc && typeof cardDesc === 'object' && !Array.isArray(cardDesc)) {
-                        cardDesc = Object.values(cardDesc);
-                    }
-                    if (Array.isArray(cardDesc) && cardDesc.length === 128) {
-                        const dist = calculateEuclideanDistance(parsedDescriptor, cardDesc);
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            bestCard = card;
-                        }
-                    }
-                }
-
-                if (minDistance <= 0.65 && bestCard) {
-                    biometricMatchDist = minDistance;
-                    if (!matchedCard || matchedCard._id.toString() === bestCard._id.toString()) {
-                        matchedCard = bestCard;
-                        matchMethod = 'biometric_photo_match';
-                        matchScore = Math.max(matchScore, Math.round((1 - minDistance) * 100));
-                    }
-                }
-            }
-        }
-
-        // 5. Fallback Check in SAMPLE_RECORDS list
+        // 4. Check in registered bio-data fallback
         if (!matchedCard) {
-            for (const sample of SAMPLE_RECORDS) {
+            for (const sample of REGISTERED_BIO_DATA) {
                 const sNum = sample.formNumber.toUpperCase();
                 const sNameTokens = sample.name.toUpperCase().split(/\s+/);
                 const sMatch = combinedText.includes(sNum) ||
                     sNameTokens.some(tok => tok.length > 3 && combinedText.includes(tok));
 
                 if (sMatch) {
-                    matchedCard = new RegisteredID({
-                        formNumber: sample.formNumber,
-                        name: sample.name,
-                        email: sample.email,
-                        role: sample.role,
-                        station: sample.station,
-                        department: sample.department,
-                        phone: '+91 9876543210',
-                        idCardImage: sample.image,
-                        faceDescriptor: [],
-                        isActive: true
-                    });
-                    await matchedCard.save();
-                    matchMethod = 'sample_fallback';
+                    matchedCard = await RegisteredID.findOne({ formNumber: sample.formNumber });
+                    matchMethod = 'bio_data_match';
                     matchScore = 97;
                     break;
                 }
@@ -246,8 +176,7 @@ router.post('/match-id-card', async (req, res) => {
                     email: matchedCard.email,
                     role: matchedCard.role,
                     station: matchedCard.station,
-                    department: matchedCard.department,
-                    idCardImage: matchedCard.idCardImage
+                    department: matchedCard.department
                 }
             });
         }
@@ -265,9 +194,9 @@ router.post('/match-id-card', async (req, res) => {
 // POST /api/auth/id-card-login (VERIFIED AI ID CARD LOGIN & ENTRY)
 router.post('/id-card-login', async (req, res) => {
     try {
-        let { formNumber, cardFaceDescriptor, extractedName, rawText, barcode } = req.body;
+        let { formNumber, extractedName, rawText, barcode } = req.body;
 
-        await ensureSampleRecordsSeeded();
+        await ensureBioDataSeeded();
         let activeCards = await RegisteredID.find({ isActive: true });
 
         const combinedText = [
@@ -315,44 +244,9 @@ router.post('/id-card-login', async (req, res) => {
             }
         }
 
-        // 3. Match by Biometric Face Vector if provided
-        if (cardFaceDescriptor) {
-            let parsedDescriptor = cardFaceDescriptor;
-            if (typeof cardFaceDescriptor === 'string') {
-                try { parsedDescriptor = JSON.parse(cardFaceDescriptor); } catch (e) {}
-            }
-            if (parsedDescriptor && typeof parsedDescriptor === 'object' && !Array.isArray(parsedDescriptor)) {
-                parsedDescriptor = Object.values(parsedDescriptor);
-            }
-
-            if (Array.isArray(parsedDescriptor) && parsedDescriptor.length === 128) {
-                let bestCard = null;
-                let minDistance = Infinity;
-
-                for (const card of activeCards) {
-                    let cardDesc = card.faceDescriptor;
-                    if (cardDesc && typeof cardDesc === 'object' && !Array.isArray(cardDesc)) {
-                        cardDesc = Object.values(cardDesc);
-                    }
-                    if (Array.isArray(cardDesc) && cardDesc.length === 128) {
-                        const dist = calculateEuclideanDistance(parsedDescriptor, cardDesc);
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            bestCard = card;
-                        }
-                    }
-                }
-
-                if (minDistance <= 0.65 && bestCard) {
-                    matchedCard = bestCard;
-                    matchScore = Math.max(matchScore, Math.round((1 - minDistance) * 100));
-                }
-            }
-        }
-
-        // 4. Sample records fallback
+        // 3. Registered bio-data fallback
         if (!matchedCard) {
-            for (const sample of SAMPLE_RECORDS) {
+            for (const sample of REGISTERED_BIO_DATA) {
                 if (combinedText.includes(sample.formNumber.toUpperCase()) ||
                     sample.name.toUpperCase().split(/\s+/).some(t => t.length > 3 && combinedText.includes(t))) {
                     matchedCard = await RegisteredID.findOne({ formNumber: sample.formNumber });
@@ -406,7 +300,7 @@ router.post('/id-card-login', async (req, res) => {
             'login',
             'system',
             user._id,
-            `AI ID Card & Bio-Data Verification Login (Form No: ${matchedCard.formNumber}, Match Score: ${matchScore}%)`,
+            `AI ID Card Scan & Bio-Data Login (Form No: ${matchedCard.formNumber}, Match Score: ${matchScore}%)`,
             req
         );
 
@@ -428,126 +322,6 @@ router.post('/id-card-login', async (req, res) => {
     } catch (err) {
         console.error('ID Card Login error:', err);
         res.status(500).json({ msg: 'Server error during ID card authentication' });
-    }
-});
-
-// POST /api/auth/face-login (PRIMARY AI BIOMETRIC LOGIN)
-router.post('/face-login', async (req, res) => {
-    try {
-        const { formNumber, faceDescriptor } = req.body;
-
-        if (!formNumber || !faceDescriptor) {
-            return res.status(400).json({ msg: 'Form number and live face descriptor are required' });
-        }
-
-        let parsedDescriptor = faceDescriptor;
-        if (typeof faceDescriptor === 'string') {
-            try {
-                parsedDescriptor = JSON.parse(faceDescriptor);
-            } catch (e) {
-                return res.status(400).json({ msg: 'Invalid face descriptor format' });
-            }
-        }
-        if (parsedDescriptor && typeof parsedDescriptor === 'object' && !Array.isArray(parsedDescriptor)) {
-            parsedDescriptor = Object.values(parsedDescriptor);
-        }
-
-        if (!Array.isArray(parsedDescriptor) || parsedDescriptor.length !== 128) {
-            return res.status(400).json({ msg: 'Face descriptor must be a 128-dimensional vector' });
-        }
-
-        const formattedFormNo = formNumber.trim().toUpperCase();
-        const digitsMatch = formattedFormNo.match(/\d{6,10}/);
-        const digits = digitsMatch ? digitsMatch[0] : null;
-
-        let registered = await RegisteredID.findOne({
-            $or: [
-                { formNumber: formattedFormNo },
-                ...(digits ? [{ formNumber: new RegExp(digits, 'i') }] : [])
-            ],
-            isActive: true
-        });
-
-        if (!registered) {
-            return res.status(404).json({
-                msg: `ID Card (Form No: ${formattedFormNo}) not found in system or deactivated`
-            });
-        }
-
-        let regDescriptor = registered.faceDescriptor;
-        if (regDescriptor && typeof regDescriptor === 'object' && !Array.isArray(regDescriptor)) {
-            regDescriptor = Object.values(regDescriptor);
-        }
-
-        const distance = calculateEuclideanDistance(parsedDescriptor, regDescriptor);
-        const MATCH_THRESHOLD = 0.62;
-
-        if (distance > MATCH_THRESHOLD) {
-            return res.status(401).json({
-                msg: `Face verification failed. Live face does not match ID card photo (Confidence score: ${(Math.max(0, 1 - distance) * 100).toFixed(1)}%)`,
-                distance: distance.toFixed(4)
-            });
-        }
-
-        const assignedRole = (formattedFormNo === '25110377') ? 'super_admin' : (registered.role || 'officer');
-
-        let user = await User.findOne({
-            $or: [
-                { formNumber: formattedFormNo },
-                { email: registered.email.toLowerCase() }
-            ]
-        });
-
-        if (!user) {
-            user = new User({
-                name: registered.name,
-                email: registered.email,
-                role: assignedRole,
-                station: registered.station,
-                department: registered.department,
-                phone: registered.phone,
-                formNumber: formattedFormNo,
-                isActive: true
-            });
-            await user.save();
-        } else {
-            user.formNumber = formattedFormNo;
-            user.role = assignedRole;
-            user.station = registered.station;
-            user.department = registered.department;
-            user.phone = registered.phone;
-            user.isActive = true;
-            user.lastLogin = new Date();
-            await user.save();
-        }
-
-        await logAction(
-            user._id,
-            'login',
-            'system',
-            user._id,
-            `AI ID + Face Verification Login (Form No: ${formattedFormNo}, Match distance: ${distance.toFixed(4)})`,
-            req
-        );
-
-        const token = generateToken(user._id);
-
-        res.json({
-            token,
-            matchScore: ((1 - Math.min(distance, 1)) * 100).toFixed(1) + '%',
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                station: user.station,
-                department: user.department,
-                formNumber: user.formNumber
-            }
-        });
-    } catch (err) {
-        console.error('Face login error:', err);
-        res.status(500).json({ msg: 'Server error during biometric authentication' });
     }
 });
 

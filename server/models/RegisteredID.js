@@ -28,19 +28,23 @@ const registeredIDSchema = new mongoose.Schema({
     },
     station: {
         type: String,
-        trim: true
+        trim: true,
+        default: 'OUTR Bhubaneswar'
     },
     department: {
         type: String,
-        trim: true
+        trim: true,
+        default: 'Computer Science and Engineering'
     },
     phone: {
         type: String,
-        trim: true
+        trim: true,
+        default: '+91 9876543210'
     },
     idCardImage: {
         type: String,
-        required: [true, 'ID card image path is required']
+        required: false,
+        default: null
     },
     faceDescriptor: {
         type: [Number],

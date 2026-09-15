@@ -16,13 +16,12 @@ import {
   FiUpload,
   FiArrowRight,
   FiCheck,
-  FiZap,
-  FiEye,
-  FiEyeOff,
   FiKey,
   FiSearch,
   FiXCircle,
-  FiCpu
+  FiCpu,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
 import { BiBarcodeReader } from 'react-icons/bi';
 
@@ -32,49 +31,6 @@ const STEPS = {
   FAILED_MATCH: 'failed_match',
   SUCCESS: 'success'
 };
-
-const SAMPLE_CARDS = [
-  {
-    id: 'soyam_prakash',
-    name: 'Soyam Prakash Panda',
-    regdNo: '25110377',
-    role: 'super_admin',
-    department: 'Computer Science and Engineering',
-    station: 'OUTR Bhubaneswar',
-    bloodGroup: 'A+',
-    image: '/sample_ids/soyam_prakash.jpeg'
-  },
-  {
-    id: 'chitra',
-    name: 'Chitra Adyasha Panda',
-    regdNo: '25110335',
-    role: 'officer',
-    department: 'Computer Science and Engineering',
-    station: 'OUTR Bhubaneswar',
-    bloodGroup: 'A+',
-    image: '/sample_ids/chitra.jpeg'
-  },
-  {
-    id: 'kuldeep',
-    name: 'S Kuldeep',
-    regdNo: '25110367',
-    role: 'officer',
-    department: 'Computer Science and Engineering',
-    station: 'OUTR Bhubaneswar',
-    bloodGroup: 'O+',
-    image: '/sample_ids/kuldeep.jpeg'
-  },
-  {
-    id: 'soyam_sambit',
-    name: 'Soyam Sambit Sahoo',
-    regdNo: '25110378',
-    role: 'officer',
-    department: 'Computer Science and Engineering',
-    station: 'OUTR Bhubaneswar',
-    bloodGroup: 'AB+',
-    image: '/sample_ids/soyam_sambit.jpeg'
-  }
-];
 
 export default function IDVerification() {
   const navigate = useNavigate();
@@ -92,11 +48,6 @@ export default function IDVerification() {
   const [barcodeData, setBarcodeData] = useState(null);
   const [matchedPersonnel, setMatchedPersonnel] = useState(null);
   const [confidenceScore, setConfidenceScore] = useState(0);
-  const [verificationDetails, setVerificationDetails] = useState({
-    formMatch: false,
-    nameMatch: false,
-    faceMatch: false
-  });
 
   const [scanningCard, setScanningCard] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
@@ -104,7 +55,7 @@ export default function IDVerification() {
   const [verifyingManual, setVerifyingManual] = useState(false);
   const [cameraError, setCameraError] = useState(null);
 
-  // Direct Password fallback state if user wants to enter with password
+  // Optional password confirmation state
   const [usePasswordAuth, setUsePasswordAuth] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -114,38 +65,16 @@ export default function IDVerification() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // 1. Preload AI Neural Models & Seed Database on Mount
+  // 1. Preload AI Neural Models in background on Mount
   useEffect(() => {
-    async function initializeAI() {
-      try {
-        // Pre-load face-api neural models in background
-        loadFaceModels().catch(() => {});
-
-        const seedPayload = SAMPLE_CARDS.map(s => ({
-          formNumber: s.regdNo,
-          name: s.name,
-          email: `${s.id}.${s.regdNo}@outr.ac.in`,
-          role: s.role,
-          station: s.station,
-          department: s.department,
-          phone: '+91 9876543210',
-          idCardImage: s.image,
-          faceDescriptor: []
-        }));
-        await api.post('/registered-ids/seed-samples', { samples: seedPayload });
-      } catch (err) {
-        console.warn('AI initialization / Sample sync:', err);
-      }
-    }
-
-    initializeAI();
+    loadFaceModels().catch(() => {});
 
     return () => {
       stopCamera();
     };
   }, []);
 
-  // 2. Manage Camera lifecycle for ID Card Window
+  // 2. Manage Camera lifecycle
   useEffect(() => {
     if (currentStep === STEPS.CARD_SCAN) {
       startCamera(facingMode);
@@ -177,7 +106,7 @@ export default function IDVerification() {
       }
     } catch (err) {
       console.error('Camera access error:', err);
-      setCameraError('Camera access unavailable. You can upload an ID card photo or select a registered card.');
+      setCameraError('Camera access unavailable. You can click "Upload ID Photo" or enter your Registration No.');
     }
   };
 
@@ -213,16 +142,16 @@ export default function IDVerification() {
   };
 
   /**
-   * AUTOMATIC AI SCANNING & BIO-DATA MATCHING PIPELINE:
-   * 1. AI Image Preprocessing & Neural OCR: Extracts Form/Regd No & Name
-   * 2. Barcode / QR neural scan
-   * 3. Face-API Neural Network: Detects portrait on ID card & computes 128-d biometric descriptor
-   * 4. Bio-Data Database Cross-Check: Verifies Form No, Name, & Photo against enrolled personnel
-   * 5. Strict Verification Confirmation: If matched -> "VERIFIED", else -> "FAILED"
+   * AUTOMATIC AI SCANNING, EXTRACTION & BIO-DATA MATCHING:
+   * 1. Takes the clicked photo / uploaded card image.
+   * 2. AI Preprocessing & OCR scans text, Registration/Form No & Name.
+   * 3. Face-API detects & crops the photo from the clicked card.
+   * 4. Matches against registered personnel bio-data in the system.
+   * 5. Confirms "VERIFIED" if matching or "REJECTED" if mismatch.
    */
   const processAndMatchIDCard = async (dataUrlOrImageSrc, formNumberHint = null) => {
     setScanningCard(true);
-    setScanStatus('AI Neural Engine: Reading ID card & scanning barcode...');
+    setScanStatus('AI Engine: Analyzing captured ID card...');
     setCapturedCardImage(dataUrlOrImageSrc);
     setExtractedFaceUrl(null);
 
@@ -235,23 +164,19 @@ export default function IDVerification() {
         img.onerror = () => resolve();
       });
 
-      // 1. Run AI Face Extraction on the ID Card Photo
-      let cardFaceDescriptor = null;
-      let croppedFace = null;
+      // 1. Detect & crop photo portrait from the clicked ID card
       try {
-        setScanStatus('Extracting facial portrait biometrics from ID card...');
+        setScanStatus('Extracting facial photo from captured card...');
         const faceRes = await extractFaceDescriptorFromImage(img);
-        if (faceRes) {
-          cardFaceDescriptor = faceRes.descriptor;
-          croppedFace = faceRes.croppedFaceUrl;
-          setExtractedFaceUrl(croppedFace);
+        if (faceRes && faceRes.croppedFaceUrl) {
+          setExtractedFaceUrl(faceRes.croppedFaceUrl);
         }
       } catch (fErr) {
-        console.warn('Face portrait extraction notice:', fErr);
+        console.warn('Face crop notice:', fErr);
       }
 
-      // 2. Run AI OCR and Barcode detection
-      setScanStatus('Scanning text tokens, Registration No, and Name...');
+      // 2. Run OCR & Barcode extraction on the captured picture
+      setScanStatus('Scanning Registration / Form No. & Name...');
       let detectedFormNo = formNumberHint || null;
       let detectedName = null;
       let foundBarcode = null;
@@ -271,123 +196,68 @@ export default function IDVerification() {
           setBarcodeData(foundBarcode);
         }
       } catch (oErr) {
-        console.warn('OCR / Barcode processing notice:', oErr);
+        console.warn('OCR processing notice:', oErr);
       }
 
       setExtractedFormNo(detectedFormNo || '');
       setExtractedName(detectedName || '');
 
-      setScanStatus('Matching ID details & photo with registered bio-data...');
+      setScanStatus('Matching extracted details with registered bio-data...');
 
-      // 3. Query Server for Intelligent Bio-Data Matching
-      let p = null;
+      // 3. Cross-reference with system bio-data records
+      let matched = null;
       let score = 95;
-      let formMatch = false;
-      let nameMatch = false;
-      let faceMatch = false;
 
       try {
         const matchRes = await api.post('/auth/match-id-card', {
           formNumber: detectedFormNo,
           extractedName: detectedName,
-          cardFaceDescriptor,
           rawText: rawOcrText,
           barcode: foundBarcode
         });
 
         if (matchRes.data?.matched && matchRes.data.personnel) {
-          p = matchRes.data.personnel;
+          matched = matchRes.data.personnel;
           score = matchRes.data.confidenceScore || 98;
-          formMatch = true;
-          nameMatch = !!detectedName || !!p.name;
-          faceMatch = !!cardFaceDescriptor;
         }
       } catch (serverErr) {
         console.warn('Server match API notice:', serverErr);
       }
 
-      // 4. Client-side fallback check in SAMPLE_CARDS if server was unreachable or ambiguous
-      if (!p && detectedFormNo) {
-        const localSample = SAMPLE_CARDS.find(s => s.regdNo === detectedFormNo || detectedFormNo.includes(s.regdNo));
-        if (localSample) {
-          p = {
-            formNumber: localSample.regdNo,
-            name: localSample.name,
-            role: localSample.role,
-            station: localSample.station,
-            department: localSample.department,
-            email: `${localSample.id}.${localSample.regdNo}@outr.ac.in`,
-            idCardImage: localSample.image
-          };
-          score = 99;
-          formMatch = true;
-          nameMatch = true;
-          faceMatch = true;
-        }
-      }
-
-      // 5. Check OCR text for sample names or registration numbers
-      if (!p && rawOcrText) {
-        const upper = rawOcrText.toUpperCase();
-        for (const sample of SAMPLE_CARDS) {
-          if (upper.includes(sample.regdNo) || upper.includes(sample.name.toUpperCase().split(' ')[0])) {
-            p = {
-              formNumber: sample.regdNo,
-              name: sample.name,
-              role: sample.role,
-              station: sample.station,
-              department: sample.department,
-              email: `${sample.id}.${sample.regdNo}@outr.ac.in`,
-              idCardImage: sample.image
-            };
-            score = 96;
-            formMatch = true;
-            nameMatch = true;
-            faceMatch = true;
-            break;
-          }
-        }
-      }
-
-      // 6. Final Verification Confirmation
-      if (p) {
-        setMatchedPersonnel(p);
+      // 4. Verification Check
+      if (matched) {
+        setMatchedPersonnel(matched);
         setConfidenceScore(score);
-        setVerificationDetails({
-          formMatch: formMatch || true,
-          nameMatch: nameMatch || true,
-          faceMatch: faceMatch || !!croppedFace
-        });
-        setExtractedFormNo(p.formNumber);
-        setExtractedName(p.name);
-        setBarcodeData(foundBarcode || p.formNumber);
+        setExtractedFormNo(matched.formNumber);
+        setExtractedName(matched.name);
+        setBarcodeData(foundBarcode || matched.formNumber);
         setCurrentStep(STEPS.VERIFIED_MATCH);
-        toast.success(`ID Card Verified: ${p.name} (${p.formNumber})`);
+        toast.success(`ID Card Verified: ${matched.name} (${matched.formNumber})`);
       } else {
         setCurrentStep(STEPS.FAILED_MATCH);
-        toast.error('Verification Failed: ID card details do not match authorized personnel records.');
+        toast.error('Verification Failed: ID card details do not match any authorized personnel records.');
       }
     } catch (err) {
       console.error('ID Card Match error:', err);
       setCurrentStep(STEPS.FAILED_MATCH);
-      toast.error('Error scanning ID. Please try again or select your registered ID.');
+      toast.error('Error scanning ID. Please try capturing again.');
     } finally {
       setScanningCard(false);
       setScanStatus('');
     }
   };
 
-  // Capture from Live Camera
+  // Click picture from Live Camera & Scan
   const handleCaptureCard = async () => {
     const dataUrl = captureFrame();
     if (!dataUrl) {
-      toast.error('Unable to capture camera frame');
+      toast.error('Unable to capture camera frame. Please ensure camera is allowed.');
       return;
     }
     await processAndMatchIDCard(dataUrl);
   };
 
-  // Handle Manual File Upload for ID Card
+  // Upload any ID Card photo file & Scan
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -398,12 +268,6 @@ export default function IDVerification() {
       await processAndMatchIDCard(dataUrl);
     };
     reader.readAsDataURL(file);
-  };
-
-  // Select one of the 4 Pre-registered Sample ID Cards
-  const handleSelectSampleCard = async (sample) => {
-    toast.success(`Scanning ID card for ${sample.name}...`);
-    await processAndMatchIDCard(sample.image, sample.regdNo);
   };
 
   // Manual Verify / Lookup Form Number
@@ -419,45 +283,18 @@ export default function IDVerification() {
       const res = await api.get(`/registered-ids/verify/${encodeURIComponent(num)}`);
       if (res.data?.exists && res.data.personnel) {
         const p = res.data.personnel;
-        const sampleMatch = SAMPLE_CARDS.find(s => s.regdNo === p.formNumber);
-
-        setMatchedPersonnel({
-          ...p,
-          idCardImage: sampleMatch?.image || '/sample_ids/soyam_prakash.jpeg'
-        });
-        setCapturedCardImage(sampleMatch?.image || '/sample_ids/soyam_prakash.jpeg');
+        setMatchedPersonnel(p);
         setExtractedFormNo(p.formNumber);
         setExtractedName(p.name);
         setConfidenceScore(99);
-        setVerificationDetails({ formMatch: true, nameMatch: true, faceMatch: true });
         setBarcodeData(p.formNumber);
         setCurrentStep(STEPS.VERIFIED_MATCH);
         toast.success(`Verified: ${p.name}`);
         return;
       }
+      setCurrentStep(STEPS.FAILED_MATCH);
+      toast.error('Registration Number not found in authorized records.');
     } catch (err) {
-      const localSample = SAMPLE_CARDS.find(s => s.regdNo === num || num.includes(s.regdNo));
-      if (localSample) {
-        const p = {
-          formNumber: localSample.regdNo,
-          name: localSample.name,
-          role: localSample.role,
-          station: localSample.station,
-          department: localSample.department,
-          email: `${localSample.id}.${localSample.regdNo}@outr.ac.in`,
-          idCardImage: localSample.image
-        };
-        setMatchedPersonnel(p);
-        setCapturedCardImage(localSample.image);
-        setExtractedFormNo(localSample.regdNo);
-        setExtractedName(localSample.name);
-        setConfidenceScore(99);
-        setVerificationDetails({ formMatch: true, nameMatch: true, faceMatch: true });
-        setBarcodeData(localSample.regdNo);
-        setCurrentStep(STEPS.VERIFIED_MATCH);
-        toast.success(`Verified: ${localSample.name}`);
-        return;
-      }
       setCurrentStep(STEPS.FAILED_MATCH);
       toast.error('Registration Number not found in authorized records.');
     } finally {
@@ -474,7 +311,6 @@ export default function IDVerification() {
 
     setIsSubmitting(true);
     try {
-      // 1. Try direct ID card login
       const success = await idCardLogin({
         formNumber: matchedPersonnel.formNumber,
         extractedName: matchedPersonnel.name,
@@ -490,7 +326,6 @@ export default function IDVerification() {
         return;
       }
 
-      // 2. Fallback to default password login
       const fallbackSuccess = await login(matchedPersonnel.formNumber, 'Admin@123');
       if (fallbackSuccess) {
         setCurrentStep(STEPS.SUCCESS);
@@ -500,7 +335,6 @@ export default function IDVerification() {
       }
     } catch (err) {
       console.error('Direct entry error:', err);
-      // If direct login requires password, switch to password form
       setUsePasswordAuth(true);
     } finally {
       setIsSubmitting(false);
@@ -536,7 +370,7 @@ export default function IDVerification() {
     }
   };
 
-  // Reset verification flow back to ID Card Window
+  // Reset verification flow back to Camera
   const handleReset = () => {
     setCapturedCardImage(null);
     setExtractedFaceUrl(null);
@@ -581,16 +415,16 @@ export default function IDVerification() {
             </span>
           </h1>
           <p className="text-xs text-gray-400 mt-1 tracking-widest uppercase font-medium">
-            Automated Neural ID Card & Bio-Data Verification
+            Live AI ID Card Capture & Bio-Data Verification
           </p>
         </div>
 
-        {/* Verification Status Pill Header */}
+        {/* Verification Status Banner */}
         <div className="flex items-center justify-center mb-5">
           {currentStep === STEPS.CARD_SCAN && (
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/30 text-xs text-blue-300">
               <FiCpu className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-              <span>Step 1: Present or Scan Authorized ID Card</span>
+              <span>Show ID Card & Click Picture to Scan</span>
             </div>
           )}
           {currentStep === STEPS.VERIFIED_MATCH && (
@@ -607,18 +441,18 @@ export default function IDVerification() {
           )}
         </div>
 
-        {/* Card Window Container */}
+        {/* Main Window Box */}
         <div className="bg-[#0f172a]/95 border border-gray-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
 
-          {/* VIEW 1: ID CARD SCANNER / CAMERA WINDOW (ONLY ID CARD WINDOW) */}
+          {/* VIEW 1: LIVE ID CARD CAMERA / SCANNER WINDOW */}
           {currentStep === STEPS.CARD_SCAN && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <FiCamera className="text-blue-400" /> ID Card Scanner Window
+                    <FiCamera className="text-blue-400" /> ID Card Camera Window
                   </h2>
-                  <p className="text-xs text-gray-400">Position ID card inside the frame to auto-scan Form No, Name & Photo</p>
+                  <p className="text-xs text-gray-400">Show any official ID card in the box and click picture</p>
                 </div>
                 <button
                   type="button"
@@ -630,7 +464,7 @@ export default function IDVerification() {
                 </button>
               </div>
 
-              {/* ID Card Camera Viewport (Single Window) */}
+              {/* ID Card Camera Viewport */}
               <div className="relative aspect-[16/10] bg-black rounded-xl overflow-hidden border-2 border-gray-800 flex items-center justify-center shadow-inner">
                 <video
                   ref={videoRef}
@@ -653,7 +487,7 @@ export default function IDVerification() {
                   <div className="text-center bg-black/85 py-1.5 px-3 rounded-full backdrop-blur-sm self-center border border-blue-500/40 flex items-center gap-2">
                     <BiBarcodeReader className="text-blue-400 w-4 h-4" />
                     <p className="text-[11px] font-semibold text-blue-300 tracking-wider uppercase">
-                      Show Official ID Card Here
+                      Hold ID Card Here
                     </p>
                   </div>
 
@@ -683,19 +517,19 @@ export default function IDVerification() {
                       onClick={() => fileInputRef.current?.click()}
                       className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-md"
                     >
-                      Upload ID Card Photo Instead
+                      Upload ID Card Photo
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons: Camera Capture & Upload */}
+              {/* Action Buttons: Click Picture & Upload */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={scanningCard}
-                  className="w-full py-2.5 px-4 bg-gray-800/80 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors border border-gray-700"
+                  className="w-full py-3 px-4 bg-gray-800/80 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors border border-gray-700"
                 >
                   <FiUpload className="w-4 h-4 text-blue-400" /> Upload ID Photo
                 </button>
@@ -703,14 +537,14 @@ export default function IDVerification() {
                   type="button"
                   onClick={handleCaptureCard}
                   disabled={scanningCard || !!cameraError}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all"
                 >
-                  <FiCamera className="w-4 h-4" /> Capture & Scan ID
+                  <FiCamera className="w-4 h-4" /> Click Picture & Scan
                 </button>
               </div>
 
               {/* Quick Regd Number Search / Type-in Input */}
-              <div className="pt-2">
+              <div className="pt-2 border-t border-gray-800">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -723,64 +557,29 @@ export default function IDVerification() {
                     value={manualInputFormNo}
                     onChange={(e) => setManualInputFormNo(e.target.value.toUpperCase())}
                     placeholder="Enter Registration / Form No. (e.g. 25110377)"
-                    className="flex-1 px-3.5 py-2 bg-black/50 border border-gray-700 focus:border-blue-400 rounded-xl text-xs font-mono text-white placeholder-gray-500 uppercase focus:outline-none"
+                    className="flex-1 px-3.5 py-2.5 bg-black/50 border border-gray-700 focus:border-blue-400 rounded-xl text-xs font-mono text-white placeholder-gray-500 uppercase focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={verifyingManual}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
                   >
                     <FiSearch className="w-3.5 h-3.5" /> {verifyingManual ? 'Verifying...' : 'Verify'}
                   </button>
                 </form>
               </div>
-
-              {/* Quick Registered ID Card Selection (4 Pre-registered Cards) */}
-              <div className="mt-3 pt-3 border-t border-gray-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase flex items-center gap-1.5">
-                    <FiZap className="text-yellow-400" /> Authorized Personnel Cards (Instant Scan)
-                  </span>
-                  <span className="text-[10px] text-gray-500">{SAMPLE_CARDS.length} Enrolled</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {SAMPLE_CARDS.map((card) => (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => handleSelectSampleCard(card)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-900/60 hover:bg-blue-950/40 border border-gray-800 hover:border-blue-500/50 transition-all text-left group"
-                    >
-                      <img
-                        src={card.image}
-                        alt={card.name}
-                        className="w-10 h-10 rounded-lg object-cover border border-gray-700 group-hover:border-blue-400 transition-colors shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-gray-200 group-hover:text-blue-300 truncate">
-                          {card.name}
-                        </p>
-                        <p className="text-[10px] font-mono text-gray-400">
-                          {card.regdNo} • {card.role === 'super_admin' ? 'Super Admin' : 'Officer'}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
-          {/* VIEW 2: ID CARD & BIO-DATA MATCH CONFIRMED (ONLY ENTER WHEN MATCHED) */}
+          {/* VIEW 2: VERIFIED RESULT & BIO-DATA MATCH */}
           {currentStep === STEPS.VERIFIED_MATCH && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <FiCheckCircle className="text-green-400" /> ID Card Verified with Bio-Data
+                    <FiCheckCircle className="text-green-400" /> ID Card Scanned & Verified
                   </h2>
-                  <p className="text-xs text-gray-400">Card details & photo biometric confirmed with registered records</p>
+                  <p className="text-xs text-gray-400">Extracted data matches registered personnel bio-data</p>
                 </div>
                 <button
                   type="button"
@@ -791,22 +590,28 @@ export default function IDVerification() {
                 </button>
               </div>
 
-              {/* Bio-Data Match Comparison Card */}
+              {/* Scanned Picture & Matched Bio-Data Display */}
               <div className="p-4 bg-gradient-to-br from-green-950/30 via-gray-900/80 to-blue-950/30 border border-green-500/40 rounded-xl space-y-3.5 shadow-lg">
-                {/* Photo & Identity Overview */}
                 <div className="flex items-center gap-3.5">
+                  {/* The actual clicked card picture */}
                   <div className="relative shrink-0">
-                    <img
-                      src={matchedPersonnel?.idCardImage || capturedCardImage || '/sample_ids/soyam_prakash.jpeg'}
-                      alt="Scanned ID"
-                      className="w-16 h-20 rounded-lg object-cover border-2 border-green-500/60 shadow-md"
-                    />
+                    {capturedCardImage ? (
+                      <img
+                        src={capturedCardImage}
+                        alt="Captured ID"
+                        className="w-16 h-20 rounded-lg object-cover border-2 border-green-500/60 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-16 h-20 rounded-lg bg-gray-800 flex items-center justify-center border border-gray-700">
+                        <FiUser className="w-8 h-8 text-gray-500" />
+                      </div>
+                    )}
                     {extractedFaceUrl && (
                       <img
                         src={extractedFaceUrl}
                         alt="Extracted Portrait"
                         className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full border border-green-400 object-cover shadow bg-black"
-                        title="Neural Extracted Face"
+                        title="AI Cropped Photo"
                       />
                     )}
                   </div>
@@ -814,7 +619,7 @@ export default function IDVerification() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-500/40 flex items-center gap-1">
-                        <FiCheck className="w-3 h-3" /> Verified Identity
+                        <FiCheck className="w-3 h-3" /> Bio-Data Confirmed
                       </span>
                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                         {matchedPersonnel?.role?.replace('_', ' ') || 'Officer'}
@@ -855,9 +660,9 @@ export default function IDVerification() {
                     </p>
                   </div>
                   <div className="p-2 rounded-lg bg-black/40 border border-gray-800">
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Bio-Data Photo</p>
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Bio-Data Record</p>
                     <p className="text-xs font-bold text-green-400 flex items-center justify-center gap-1 mt-0.5">
-                      <FiCheck className="w-3 h-3" /> CONFIRMED
+                      <FiCheck className="w-3 h-3" /> {confidenceScore}%
                     </p>
                   </div>
                 </div>
@@ -869,7 +674,7 @@ export default function IDVerification() {
                 </div>
               </div>
 
-              {/* Direct 1-Click Entry or Password Form */}
+              {/* Direct 1-Click Entry Button */}
               {!usePasswordAuth ? (
                 <div className="space-y-2 pt-1">
                   <button
@@ -989,7 +794,7 @@ export default function IDVerification() {
           )}
         </div>
 
-        {/* Fallback Option */}
+        {/* Direct login fallback */}
         <div className="mt-6 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
           <span>Need direct email / password login?</span>
           <Link
