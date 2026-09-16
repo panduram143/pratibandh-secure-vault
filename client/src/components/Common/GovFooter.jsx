@@ -1,5 +1,4 @@
 import { FiShield, FiExternalLink, FiLock, FiCheckCircle } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 
 export default function GovFooter() {
   return (
@@ -8,7 +7,7 @@ export default function GovFooter() {
       <div className="h-[2px] w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-left">
           {/* Col 1: System Info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-white font-bold text-sm tracking-wide">
@@ -97,26 +96,6 @@ export default function GovFooter() {
                 </a>
               </li>
             </ul>
-          </div>
-
-          {/* Col 4: Repository & Technical Specifications */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-200 border-b border-gray-700/60 pb-1">
-              Source & Repository
-            </h4>
-            <p className="text-xs text-gray-400">
-              Open investigation codebase with automated AI OCR, Facial Recognition, and Immutable SHA-256 Audit Trail.
-            </p>
-            <a
-              href="https://github.com/soyam-panda"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#14284b] hover:bg-[#1e3a6c] text-white border border-[#2b4c85] transition-all font-semibold text-xs shadow-sm group"
-            >
-              <FaGithub className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-              <span>GitHub Repository</span>
-              <FiExternalLink className="w-3 h-3 text-blue-300" />
-            </a>
           </div>
         </div>
 

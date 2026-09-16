@@ -7,10 +7,8 @@ import {
   FiLogOut,
   FiMenu,
   FiUser,
-  FiLock,
-  FiExternalLink
+  FiLock
 } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 function Navbar({ onToggleSidebar }) {
@@ -80,21 +78,8 @@ function Navbar({ onToggleSidebar }) {
         />
       </form>
 
-      {/* Right Section: GitHub Link, Clearance Badge, User & Logout */}
+      {/* Right Section: Clearance Badge, User & Logout */}
       <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* GitHub Repository Quick Button */}
-        <a
-          href="https://github.com/soyam-panda"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all shadow-sm group"
-          title="Open Project Repository on GitHub"
-        >
-          <FaGithub className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-          <span className="hidden sm:inline">GitHub</span>
-          <FiExternalLink className="w-2.5 h-2.5 text-blue-300" />
-        </a>
-
         {/* Security Level Tag */}
         <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-950/60 border border-green-500/40 text-green-300 text-[10px] font-mono font-bold">
           <FiLock className="w-3 h-3 text-green-400" />

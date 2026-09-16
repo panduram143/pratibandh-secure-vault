@@ -20,8 +20,6 @@ import {
   FiClock,
   FiLayers
 } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
-import { BiBarcodeReader } from 'react-icons/bi';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 

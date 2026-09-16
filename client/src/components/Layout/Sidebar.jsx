@@ -7,12 +7,8 @@ import {
   FiSearch,
   FiShield,
   FiUsers,
-  FiSettings,
-  FiUserCheck,
-  FiCamera,
-  FiExternalLink
+  FiUserCheck
 } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -86,28 +82,6 @@ function Sidebar({ isOpen, onClose }) {
               );
             })}
           </ul>
-
-          {/* Section: External / GitHub */}
-          <div className="px-4 mt-6 mb-2">
-            <p className="text-[10px] font-mono font-bold tracking-widest uppercase text-gray-400">
-              REPOSITORIES & LINKS
-            </p>
-          </div>
-
-          <div className="px-2.5 space-y-1">
-            <a
-              href="https://github.com/soyam-panda"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-gray-200 bg-[#0f2142] hover:bg-[#18366a] border border-[#23457a] transition-all group"
-            >
-              <div className="flex items-center gap-2.5">
-                <FaGithub size={16} className="text-white group-hover:scale-110 transition-transform" />
-                <span>GitHub Repository</span>
-              </div>
-              <FiExternalLink size={13} className="text-gray-400" />
-            </a>
-          </div>
         </div>
 
         {/* Official Footer Branding */}

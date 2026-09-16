@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   FiShield,
   FiFileText,
@@ -9,20 +9,26 @@ import {
   FiX,
   FiActivity,
   FiLayers,
-  FiExternalLink,
   FiCheckCircle,
-  FiLock,
-  FiPhoneCall
+  FiPhoneCall,
+  FiGlobe
 } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 import { BiBarcodeReader } from 'react-icons/bi';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FloatingActions() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showGovModal, setShowGovModal] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'station_admin' ||
+    user?.formNumber === '25110377' ||
+    user?.badgeId === '25110377';
 
   // Show scroll-to-top button when scrolled down
   useEffect(() => {
@@ -42,23 +48,14 @@ export default function FloatingActions() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const actions = [
-    {
-      id: 'github',
-      label: 'GitHub Repository',
-      icon: FaGithub,
-      color: 'bg-gray-900 hover:bg-black text-white border-gray-700',
-      badge: 'Code',
-      action: () => {
-        window.open('https://github.com/soyam-panda', '_blank', 'noopener,noreferrer');
-      }
-    },
+  const rawActions = [
     {
       id: 'audit',
       label: 'Audit Trail & Charts',
       icon: FiActivity,
       color: 'bg-[#0f274d] hover:bg-[#18396e] text-blue-200 border-blue-500/40',
       badge: 'Ledger',
+      adminOnly: true,
       action: () => {
         navigate('/audit');
         setIsOpen(false);
@@ -109,6 +106,8 @@ export default function FloatingActions() {
       }
     }
   ];
+
+  const actions = rawActions.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <>
@@ -171,7 +170,7 @@ export default function FloatingActions() {
               ? 'bg-red-600 hover:bg-red-500 border-red-300 rotate-90'
               : 'bg-gradient-to-tr from-[#0b244d] via-[#1a4b8c] to-[#0f346b] hover:from-blue-700 hover:to-indigo-600 border-[#d4af37] shadow-[0_0_20px_rgba(212,175,55,0.3)]'
           }`}
-          title="Government Portal Quick Actions & GitHub"
+          title="Government Portal Quick Actions"
           aria-label="Toggle quick actions"
         >
           {isOpen ? (
@@ -222,14 +221,14 @@ export default function FloatingActions() {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-gray-700 text-gray-400">
-                <span>Repository Access:</span>
+                <span>National Portal:</span>
                 <a
-                  href="https://github.com/soyam-panda"
+                  href="https://www.india.gov.in"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1"
                 >
-                  <FaGithub className="w-3.5 h-3.5" /> github.com/soyam-panda
+                  <FiGlobe className="w-3.5 h-3.5" /> india.gov.in
                 </a>
               </div>
             </div>

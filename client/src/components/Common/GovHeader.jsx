@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FiShield, FiClock, FiLock } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 
 export default function GovHeader() {
   const [currentTime, setCurrentTime] = useState('');
@@ -68,23 +67,12 @@ export default function GovHeader() {
           </span>
         </div>
 
-        {/* Right: Live IST Clock & GitHub Link */}
+        {/* Right: Live IST Clock */}
         <div className="flex items-center gap-4 text-gray-300">
-          <div className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] text-gray-200">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-gray-200 bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10">
             <FiClock className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>{currentTime || 'Loading IST...'}</span>
           </div>
-
-          <a
-            href="https://github.com/soyam-panda"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-white transition-colors text-[10px] font-semibold border border-white/15"
-            title="View Source Code on GitHub"
-          >
-            <FaGithub className="w-3 h-3" />
-            <span>GitHub</span>
-          </a>
         </div>
       </div>
     </header>

@@ -12,10 +12,8 @@ import {
   FiShield,
   FiActivity,
   FiLock,
-  FiUserCheck,
-  FiExternalLink
+  FiCheckCircle
 } from 'react-icons/fi';
-import { FaGithub } from 'react-icons/fa';
 import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
@@ -31,6 +29,13 @@ function Dashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [casesByType, setCasesByType] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'station_admin' ||
+    user?.formNumber === '25110377' ||
+    user?.badgeId === '25110377';
 
   useEffect(() => {
     fetchDashboardData();
@@ -72,12 +77,14 @@ function Dashboard() {
     { label: 'Under Review / Forensic', value: stats.pendingReviews, icon: FiClock, color: 'bg-amber-50 text-amber-800 border-amber-200' },
   ];
 
-  const quickActions = [
+  const rawQuickActions = [
     { label: 'Create Investigation Case', icon: FiPlus, link: '/cases/new', color: 'bg-[#0b1c3d] hover:bg-[#16356e]' },
     { label: 'Upload Digital Evidence', icon: FiUpload, link: '/documents/upload', color: 'bg-emerald-700 hover:bg-emerald-600' },
     { label: 'AI ID Card Verification', icon: BiBarcodeReader, link: '/login', color: 'bg-blue-700 hover:bg-blue-600' },
-    { label: 'Audit Trail & Per-Name Chart', icon: FiActivity, link: '/audit', color: 'bg-[#d4af37] text-gray-950 font-bold hover:bg-[#c5a030]' },
+    { label: 'Audit Trail & Per-Name Chart', icon: FiActivity, link: '/audit', color: 'bg-[#d4af37] text-gray-950 font-bold hover:bg-[#c5a030]', adminOnly: true },
   ];
+
+  const quickActions = rawQuickActions.filter((a) => !a.adminOnly || isAdmin);
 
   const maxCount = Math.max(...casesByType.map(c => c.count), 1);
 
@@ -110,16 +117,10 @@ function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href="https://github.com/soyam-panda"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 flex items-center gap-2 transition-all group"
-            >
-              <FaGithub className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-              <span>Project GitHub</span>
-              <FiExternalLink className="w-3 h-3 text-blue-300" />
-            </a>
+            <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-gray-200 flex items-center gap-2 font-mono">
+              <FiLock className="w-3.5 h-3.5 text-[#d4af37]" />
+              <span>CCTNS ENCRYPTED NODE</span>
+            </div>
           </div>
         </div>
       </div>
@@ -147,7 +148,7 @@ function Dashboard() {
 
       {/* Main Grid: Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity Ledger */}
+        {/* Recent Activity Ledger (Shown to all members on dashboard) */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -156,15 +157,21 @@ function Dashboard() {
               </span>
               <div>
                 <h2 className="text-base font-bold text-gray-900">Recent Audit Activity</h2>
-                <p className="text-xs text-gray-500">Live timestamped access events</p>
+                <p className="text-xs text-gray-500">Live timestamped access events & digital chain of custody</p>
               </div>
             </div>
-            <Link
-              to="/audit"
-              className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 hover:underline"
-            >
-              View Full Audit Chart →
-            </Link>
+            {isAdmin ? (
+              <Link
+                to="/audit"
+                className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 hover:underline"
+              >
+                View Full Audit Chart →
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
+                <FiCheckCircle className="w-3 h-3 text-green-600" /> LIVE SEALED LEDGER
+              </span>
+            )}
           </div>
 
           <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
