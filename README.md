@@ -57,7 +57,7 @@ npm install
 npm run dev
 ```
 
-The application will be accessible at: `[http://localhost:5173](https://pratibandh-secure-vault.vercel.app/cases)`
+The application will be accessible at: `(https://pratibandh-secure-vault.vercel.app/cases)`
 
 ---
 
