@@ -11,9 +11,9 @@ import {
   FiLayers,
   FiCheckCircle,
   FiPhoneCall,
-  FiGlobe
+  FiGlobe,
+  FiCreditCard
 } from 'react-icons/fi';
-import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 
 export default function FloatingActions() {
@@ -63,10 +63,10 @@ export default function FloatingActions() {
     },
     {
       id: 'id-scanner',
-      label: 'AI ID Card Scanner',
-      icon: BiBarcodeReader,
+      label: 'ID Card Verification',
+      icon: FiCreditCard,
       color: 'bg-blue-600 hover:bg-blue-500 text-white border-blue-400',
-      badge: 'AI Scan',
+      badge: 'ID Card',
       action: () => {
         navigate('/login');
         setIsOpen(false);

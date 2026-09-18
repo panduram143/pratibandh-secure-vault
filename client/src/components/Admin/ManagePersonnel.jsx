@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { extractFaceDescriptorFromImage, loadFaceModels } from '../../utils/faceApi';
 import { processIDCardOCR } from '../../utils/ocr';
 import {
   FiUserCheck,
@@ -21,7 +20,8 @@ import {
   FiZap,
   FiEdit2,
   FiCheck,
-  FiInfo
+  FiInfo,
+  FiCreditCard
 } from 'react-icons/fi';
 
 const SAMPLE_CARDS = [
@@ -103,8 +103,6 @@ export default function ManagePersonnel() {
   });
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardPreview, setIdCardPreview] = useState(null);
-  const [faceDescriptor, setFaceDescriptor] = useState(null);
-  const [faceConfidence, setFaceConfidence] = useState(null);
   const [ocrConfidence, setOcrConfidence] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -202,19 +200,15 @@ export default function ManagePersonnel() {
     fetchPersonnel();
   };
 
-  // Process and Analyze ID Card (AI Face + OCR)
+  // Process and Analyze ID Card (OCR text & form number)
   const processImageForRegistration = async (file, previewUrl) => {
     setIdCardFile(file);
     setIdCardPreview(previewUrl);
-    setFaceDescriptor(null);
-    setFaceConfidence(null);
     setOcrConfidence(null);
     setAnalyzingCard(true);
 
     try {
-      setAnalysisStatus('Loading AI Face Biometric & OCR Models...');
-      await loadFaceModels();
-
+      setAnalysisStatus('Scanning card text for Form / Registration Number and Name...');
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = previewUrl;
@@ -222,21 +216,6 @@ export default function ManagePersonnel() {
         img.onload = resolve;
       });
 
-      // 1. Run Face Extraction on the ID Card Photo
-      setAnalysisStatus('Extracting facial biometric descriptor from card photo...');
-      const faceResult = await extractFaceDescriptorFromImage(img);
-
-      if (faceResult && faceResult.descriptor) {
-        setFaceDescriptor(faceResult.descriptor);
-        const conf = Math.round(faceResult.confidence * 100);
-        setFaceConfidence(conf);
-        toast.success(`Face biometric detected (${conf}% quality)`);
-      } else {
-        toast.error('Warning: No clear portrait face found on this ID card. Please ensure the card has a visible photo.');
-      }
-
-      // 2. Run OCR to auto-extract Form Number and Name
-      setAnalysisStatus('Scanning card text for Form / Registration Number and Name...');
       const ocrResult = await processIDCardOCR(img, (p) => setAnalysisStatus(p));
 
       setOcrConfidence(Math.round(ocrResult.confidence));
@@ -254,15 +233,15 @@ export default function ManagePersonnel() {
         toast.success(`Auto-detected Regd/Form No: ${extractedNo}`);
       }
     } catch (err) {
-      console.error('AI Card Analysis Error:', err);
-      toast.error('AI analysis encountered an error. You can still fill the fields manually.');
+      console.error('ID Card Analysis Error:', err);
+      toast.error('OCR analysis encountered an error. You can still fill the fields manually.');
     } finally {
       setAnalyzingCard(false);
       setAnalysisStatus('');
     }
   };
 
-  // Handle ID Card Upload & Automated AI Extraction
+  // Handle ID Card Upload & Automated OCR Extraction
   const handleIDCardSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -291,10 +270,6 @@ export default function ManagePersonnel() {
       toast.error('Please upload or capture an ID Card image');
       return;
     }
-    if (!faceDescriptor) {
-      toast.error('Cannot register without a valid face biometric vector extracted from ID card');
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -307,7 +282,6 @@ export default function ManagePersonnel() {
       data.append('station', formData.station.trim());
       data.append('department', formData.department.trim());
       data.append('phone', formData.phone.trim());
-      data.append('faceDescriptor', JSON.stringify(faceDescriptor));
 
       await api.post('/registered-ids', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -327,48 +301,23 @@ export default function ManagePersonnel() {
   // Sync / Re-seed the 4 sample ID cards
   const handleSyncSampleCards = async () => {
     setSyncingSamples(true);
-    const toastId = toast.loading('Extracting face biometrics and syncing 4 sample ID cards...');
+    const toastId = toast.loading('Syncing 4 sample OUTR ID cards...');
 
     try {
-      await loadFaceModels();
-      const seedPayload = [];
+      const seedPayload = SAMPLE_CARDS.map((sample) => ({
+        formNumber: sample.regdNo,
+        name: sample.name,
+        email: `${sample.id}.${sample.regdNo}@outr.ac.in`,
+        role: sample.role,
+        station: sample.station,
+        department: sample.department,
+        phone: '+91 9876543210',
+        idCardImage: sample.image
+      }));
 
-      for (const sample of SAMPLE_CARDS) {
-        try {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = sample.image;
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-          });
-
-          const faceDesc = await extractFaceDescriptorFromImage(img);
-          if (faceDesc && faceDesc.descriptor) {
-            seedPayload.push({
-              formNumber: sample.regdNo,
-              name: sample.name,
-              email: `${sample.id}.${sample.regdNo}@outr.ac.in`,
-              role: sample.role,
-              station: sample.station,
-              department: sample.department,
-              phone: '+91 9876543210',
-              faceDescriptor: faceDesc.descriptor,
-              idCardImage: sample.image
-            });
-          }
-        } catch (e) {
-          console.warn(`Error processing sample ${sample.name}:`, e);
-        }
-      }
-
-      if (seedPayload.length > 0) {
-        const res = await api.post('/registered-ids/seed-samples', { samples: seedPayload });
-        toast.success(`Synced ${res.data.count || seedPayload.length} sample ID cards successfully!`, { id: toastId });
-        fetchPersonnel();
-      } else {
-        toast.error('No sample cards could be processed', { id: toastId });
-      }
+      const res = await api.post('/registered-ids/seed-samples', { samples: seedPayload });
+      toast.success(`Synced ${res.data.count || seedPayload.length} sample ID cards successfully!`, { id: toastId });
+      fetchPersonnel();
     } catch (err) {
       toast.error('Failed to sync sample cards', { id: toastId });
     } finally {
@@ -414,8 +363,6 @@ export default function ManagePersonnel() {
     });
     setIdCardFile(null);
     setIdCardPreview(null);
-    setFaceDescriptor(null);
-    setFaceConfidence(null);
     setOcrConfidence(null);
   };
 
@@ -447,7 +394,7 @@ export default function ManagePersonnel() {
             <FiUserCheck className="text-primary dark:text-blue-400" /> Authorized Personnel & ID Card Registry
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Directly register and manage official personnel ID cards with AI face biometrics ({totalCount} enrolled)
+            Directly register and manage official personnel ID cards and credentials ({totalCount} enrolled)
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -540,7 +487,7 @@ export default function ManagePersonnel() {
                 <th className="px-6 py-3.5">Officer Name & Email</th>
                 <th className="px-6 py-3.5">Role</th>
                 <th className="px-6 py-3.5">Institution / Dept</th>
-                <th className="px-6 py-3.5">Biometric Status</th>
+                <th className="px-6 py-3.5">ID Card Status</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
@@ -589,7 +536,7 @@ export default function ManagePersonnel() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-                        <FiCheckCircle className="w-3.5 h-3.5" /> 128-d Vector
+                        <FiCheckCircle className="w-3.5 h-3.5" /> ID Verified & Registered
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -660,7 +607,7 @@ export default function ManagePersonnel() {
                 <FiShield className="text-primary dark:text-blue-400" /> Enter Official ID Card
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Upload or capture an ID card. The AI neural engine extracts the 128-d face vector and OCR details automatically.
+                Upload or capture an ID card. The OCR engine extracts and auto-fills details.
               </p>
             </div>
 
@@ -713,7 +660,7 @@ export default function ManagePersonnel() {
                     onClick={handleCaptureCardFromCamera}
                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
                   >
-                    <FiCamera className="w-4 h-4" /> Capture & Extract Biometrics
+                    <FiCamera className="w-4 h-4" /> Capture & Process Card
                   </button>
                 </div>
               )}
@@ -755,7 +702,7 @@ export default function ManagePersonnel() {
                 </div>
               )}
 
-              {/* AI Analysis Status Banner */}
+              {/* OCR Analysis Status Banner */}
               {analyzingCard && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-3">
                   <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
@@ -763,20 +710,15 @@ export default function ManagePersonnel() {
                 </div>
               )}
 
-              {/* Biometrics Extraction Badge */}
-              {faceConfidence !== null && (
+              {/* Extraction Badge */}
+              {ocrConfidence !== null && (
                 <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
                   <div className="flex items-center gap-2">
                     <FiCheckCircle className="text-green-500 w-4 h-4" />
                     <span className="text-xs font-semibold text-green-800 dark:text-green-300">
-                      Face Biometrics Ready ({faceConfidence}% confidence)
+                      ID Card Text Processed ({ocrConfidence}% OCR confidence)
                     </span>
                   </div>
-                  {ocrConfidence !== null && (
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                      OCR Confidence: {ocrConfidence}%
-                    </span>
-                  )}
                 </div>
               )}
 
@@ -880,7 +822,7 @@ export default function ManagePersonnel() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || analyzingCard || !faceDescriptor}
+                  disabled={submitting || analyzingCard}
                   className="px-5 py-2.5 bg-primary hover:bg-secondary disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2 transition-all"
                 >
                   {submitting ? 'Registering...' : 'Save & Enroll ID Card'}
@@ -907,7 +849,7 @@ export default function ManagePersonnel() {
                 <FiUser className="text-blue-500" /> Personnel Details
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Registered identity & facial biometric records
+                Registered identity & official ID records
               </p>
             </div>
 
@@ -939,9 +881,9 @@ export default function ManagePersonnel() {
                 <span className="text-gray-800 dark:text-gray-200">{viewModalItem.department || 'Computer Science & Engineering'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">Biometric Status:</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">ID Card Status:</span>
                 <span className="text-green-500 font-semibold flex items-center gap-1">
-                  <FiCheckCircle className="w-3.5 h-3.5" /> 128-d Vector Enrolled
+                  <FiCheckCircle className="w-3.5 h-3.5" /> ID Verified & Enrolled
                 </span>
               </div>
             </div>

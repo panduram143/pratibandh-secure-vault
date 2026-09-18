@@ -110,42 +110,15 @@ export function preprocessImageForOCR(sourceImage) {
 }
 
 /**
- * Scan Barcode / QR Code from an image element or canvas
- * @param {HTMLImageElement | HTMLCanvasElement} imageElement
- * @returns {Promise<{ rawValue: string, format: string } | null>}
- */
-export async function detectBarcodeFromImage(imageElement) {
-    try {
-        if ('BarcodeDetector' in window) {
-            const barcodeDetector = new window.BarcodeDetector({
-                formats: ['code_128', 'code_39', 'code_93', 'ean_13', 'ean_8', 'qr_code', 'data_matrix', 'upc_a', 'upc_e']
-            });
-            const barcodes = await barcodeDetector.detect(imageElement);
-            if (barcodes && barcodes.length > 0) {
-                return {
-                    rawValue: barcodes[0].rawValue,
-                    format: barcodes[0].format
-                };
-            }
-        }
-    } catch (err) {
-        console.warn('Native BarcodeDetector notice:', err);
-    }
-    return null;
-}
-
-/**
- * Run OCR recognition & Barcode scanning on an image canvas, element, or data URL
+ * Run OCR recognition on an image canvas, element, or data URL
  * @param {HTMLCanvasElement | HTMLImageElement | string} imageSource
  * @param {function} [onProgress]
- * @returns {Promise<{ text: string, confidence: number, formNumber: string|null, possibleName: string|null, barcode: string|null, barcodeFormat: string|null }>}
+ * @returns {Promise<{ text: string, confidence: number, formNumber: string|null, possibleName: string|null }>}
  */
 export async function processIDCardOCR(imageSource, onProgress) {
-    let barcodeResult = null;
     let processedCanvas = null;
 
     if (typeof imageSource !== 'string' && (imageSource instanceof HTMLImageElement || imageSource instanceof HTMLCanvasElement)) {
-        barcodeResult = await detectBarcodeFromImage(imageSource);
         processedCanvas = preprocessImageForOCR(imageSource);
     }
 
@@ -156,19 +129,14 @@ export async function processIDCardOCR(imageSource, onProgress) {
     const fullText = ret.data.text || '';
     const confidence = ret.data.confidence || 0;
 
-    let formNumber = barcodeResult ? barcodeResult.rawValue : null;
-    if (!formNumber) {
-        formNumber = extractFormNumber(fullText);
-    }
+    const formNumber = extractFormNumber(fullText);
     const possibleName = extractPossibleName(fullText);
 
     return {
         text: fullText,
         confidence,
         formNumber,
-        possibleName,
-        barcode: barcodeResult?.rawValue || null,
-        barcodeFormat: barcodeResult?.format || null
+        possibleName
     };
 }
 

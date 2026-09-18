@@ -7,9 +7,9 @@ import {
   FiSearch,
   FiShield,
   FiUsers,
-  FiUserCheck
+  FiUserCheck,
+  FiCreditCard
 } from 'react-icons/fi';
-import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 
 function Sidebar({ isOpen, onClose }) {
@@ -24,7 +24,7 @@ function Sidebar({ isOpen, onClose }) {
 
   const navItems = [
     { label: 'Dashboard', icon: FiGrid, path: '/' },
-    { label: 'AI ID Verification', icon: BiBarcodeReader, path: '/login' },
+    { label: 'ID Card Verification', icon: FiCreditCard, path: '/login' },
     { label: 'Cases & FIRs', icon: FiFolder, path: '/cases' },
     { label: 'Evidence Vault', icon: FiFile, path: '/documents' },
     { label: 'Upload Evidence', icon: FiUpload, path: '/documents/upload' },

@@ -46,11 +46,6 @@ const registeredIDSchema = new mongoose.Schema({
         required: false,
         default: null
     },
-    faceDescriptor: {
-        type: [Number],
-        required: false,
-        default: []
-    },
     addedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

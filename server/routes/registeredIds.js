@@ -67,7 +67,7 @@ router.get('/verify/:formNumber', async (req, res) => {
                 ...(digits ? [{ formNumber: new RegExp(digits, 'i') }] : [])
             ],
             isActive: true
-        }).select('formNumber name role station department faceDescriptor');
+        }).select('formNumber name role station department');
 
         if (!registered) {
             const sample = SAMPLE_RECORDS.find(s => s.formNumber === cleanForm || (digits && s.formNumber === digits));
@@ -110,7 +110,7 @@ router.get('/verify/:formNumber', async (req, res) => {
     }
 });
 
-// POST /api/registered-ids/seed-samples (Initialize or update sample ID cards with biometric descriptors)
+// POST /api/registered-ids/seed-samples (Initialize or update sample ID cards)
 router.post('/seed-samples', async (req, res) => {
     try {
         const { samples } = req.body;
@@ -120,17 +120,11 @@ router.post('/seed-samples', async (req, res) => {
 
         const results = [];
         for (const item of samples) {
-            const { formNumber, name, email, role, station, department, phone, faceDescriptor, idCardImage } = item;
+            const { formNumber, name, email, role, station, department, phone, idCardImage } = item;
 
-            if (!formNumber || !name || !email || !faceDescriptor) continue;
+            if (!formNumber || !name || !email) continue;
 
             const formattedForm = formNumber.trim().toUpperCase();
-            let parsedDescriptor = faceDescriptor;
-            if (typeof faceDescriptor === 'string') {
-                try { parsedDescriptor = JSON.parse(faceDescriptor); } catch (e) {}
-            }
-
-            if (!Array.isArray(parsedDescriptor) || parsedDescriptor.length !== 128) continue;
 
             let existing = await RegisteredID.findOne({ formNumber: formattedForm });
             if (!existing) {
@@ -143,13 +137,11 @@ router.post('/seed-samples', async (req, res) => {
                     department: department || 'Computer Science and Engineering',
                     phone: phone || '+91 9876543210',
                     idCardImage: idCardImage || 'sample_ids/' + formattedForm + '.jpeg',
-                    faceDescriptor: parsedDescriptor,
                     addedBy: '000000000000000000000000',
                     isActive: true
                 });
                 await existing.save();
             } else {
-                existing.faceDescriptor = parsedDescriptor;
                 existing.name = name.trim();
                 existing.isActive = true;
                 await existing.save();
@@ -206,7 +198,7 @@ router.use(roleCheck(['super_admin', 'station_admin']));
 router.post('/', upload.single('idCard'), async (req, res) => {
     let rawFilePath = null;
     try {
-        const { formNumber, name, email, role, station, department, phone, faceDescriptor } = req.body;
+        const { formNumber, name, email, role, station, department, phone } = req.body;
 
         if (!formNumber || !name || !email) {
             return res.status(400).json({ msg: 'Form number, name, and email are required' });
@@ -217,18 +209,6 @@ router.post('/', upload.single('idCard'), async (req, res) => {
         }
 
         rawFilePath = req.file.path;
-
-        // Parse face descriptor
-        let parsedDescriptor;
-        try {
-            parsedDescriptor = typeof faceDescriptor === 'string' ? JSON.parse(faceDescriptor) : faceDescriptor;
-        } catch (e) {
-            return res.status(400).json({ msg: 'Invalid face descriptor format. Must be JSON array.' });
-        }
-
-        if (!Array.isArray(parsedDescriptor) || parsedDescriptor.length !== 128) {
-            return res.status(400).json({ msg: 'Face descriptor must be a 128-dimensional array' });
-        }
 
         const formattedFormNo = formNumber.trim().toUpperCase();
 
@@ -260,7 +240,6 @@ router.post('/', upload.single('idCard'), async (req, res) => {
             department: department ? department.trim() : '',
             phone: phone ? phone.trim() : '',
             idCardImage: encryptedPath,
-            faceDescriptor: parsedDescriptor,
             addedBy: req.user._id,
             isActive: true
         });
@@ -301,7 +280,7 @@ router.post('/', upload.single('idCard'), async (req, res) => {
         );
 
         res.status(201).json({
-            msg: 'Personnel registered successfully with ID card and face biometric',
+            msg: 'Personnel registered successfully with ID card',
             registered: {
                 _id: newRegisteredID._id,
                 formNumber: newRegisteredID.formNumber,
@@ -351,7 +330,6 @@ router.get('/', async (req, res) => {
 
         const [items, total] = await Promise.all([
             RegisteredID.find(query)
-                .select('-faceDescriptor')
                 .populate('addedBy', 'name email formNumber')
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -377,7 +355,6 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const item = await RegisteredID.findById(req.params.id)
-            .select('-faceDescriptor')
             .populate('addedBy', 'name email formNumber');
 
         if (!item) {

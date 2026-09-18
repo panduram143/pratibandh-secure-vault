@@ -33,7 +33,6 @@ async function ensureBioDataSeeded() {
                     station: data.station,
                     department: data.department,
                     phone: '+91 9876543210',
-                    faceDescriptor: [],
                     isActive: true
                 });
                 await existing.save();
@@ -67,10 +66,10 @@ async function ensureBioDataSeeded() {
     }
 }
 
-// POST /api/auth/match-id-card (AI SCAN & BIO-DATA MATCHING)
+// POST /api/auth/match-id-card (ID CARD OCR & BIO-DATA MATCHING)
 router.post('/match-id-card', async (req, res) => {
     try {
-        let { formNumber, extractedName, rawText, barcode } = req.body;
+        let { formNumber, extractedName, rawText } = req.body;
 
         await ensureBioDataSeeded();
         let activeCards = await RegisteredID.find({ isActive: true });
@@ -78,7 +77,6 @@ router.post('/match-id-card', async (req, res) => {
         // Concatenate all extracted tokens from scanned card
         const combinedText = [
             formNumber || '',
-            barcode || '',
             extractedName || '',
             rawText || ''
         ].join(' ').toUpperCase();
@@ -191,17 +189,16 @@ router.post('/match-id-card', async (req, res) => {
     }
 });
 
-// POST /api/auth/id-card-login (VERIFIED AI ID CARD LOGIN & ENTRY)
+// POST /api/auth/id-card-login (VERIFIED ID CARD LOGIN & ENTRY)
 router.post('/id-card-login', async (req, res) => {
     try {
-        let { formNumber, extractedName, rawText, barcode } = req.body;
+        let { formNumber, extractedName, rawText } = req.body;
 
         await ensureBioDataSeeded();
         let activeCards = await RegisteredID.find({ isActive: true });
 
         const combinedText = [
             formNumber || '',
-            barcode || '',
             extractedName || '',
             rawText || ''
         ].join(' ').toUpperCase();

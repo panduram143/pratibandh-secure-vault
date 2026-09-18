@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { processIDCardOCR } from '../../utils/ocr';
-import { extractFaceDescriptorFromImage, loadFaceModels } from '../../utils/faceApi';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import {
@@ -21,9 +20,9 @@ import {
   FiXCircle,
   FiCpu,
   FiEye,
-  FiEyeOff
+  FiEyeOff,
+  FiCreditCard
 } from 'react-icons/fi';
-import { BiBarcodeReader } from 'react-icons/bi';
 
 const STEPS = {
   CARD_SCAN: 'card_scan',
@@ -40,12 +39,10 @@ export default function IDVerification() {
   const [stream, setStream] = useState(null);
   const [facingMode, setFacingMode] = useState('environment');
 
-  // ID Card scan data & AI extraction state
+  // ID Card scan data & OCR extraction state
   const [capturedCardImage, setCapturedCardImage] = useState(null);
-  const [extractedFaceUrl, setExtractedFaceUrl] = useState(null);
   const [extractedFormNo, setExtractedFormNo] = useState('');
   const [extractedName, setExtractedName] = useState('');
-  const [barcodeData, setBarcodeData] = useState(null);
   const [matchedPersonnel, setMatchedPersonnel] = useState(null);
   const [confidenceScore, setConfidenceScore] = useState(0);
 
@@ -65,16 +62,14 @@ export default function IDVerification() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // 1. Preload AI Neural Models in background on Mount
+  // Clean up camera stream on unmount
   useEffect(() => {
-    loadFaceModels().catch(() => {});
-
     return () => {
       stopCamera();
     };
   }, []);
 
-  // 2. Manage Camera lifecycle
+  // Manage Camera lifecycle
   useEffect(() => {
     if (currentStep === STEPS.CARD_SCAN) {
       startCamera(facingMode);
@@ -142,18 +137,16 @@ export default function IDVerification() {
   };
 
   /**
-   * AUTOMATIC AI SCANNING, EXTRACTION & BIO-DATA MATCHING:
+   * AUTOMATIC OCR SCANNING, EXTRACTION & BIO-DATA MATCHING:
    * 1. Takes the clicked photo / uploaded card image.
-   * 2. AI Preprocessing & OCR scans text, Registration/Form No & Name.
-   * 3. Face-API detects & crops the photo from the clicked card.
-   * 4. Matches against registered personnel bio-data in the system.
-   * 5. Confirms "VERIFIED" if matching or "REJECTED" if mismatch.
+   * 2. Preprocessing & OCR scans text, Registration/Form No & Name.
+   * 3. Matches against registered personnel bio-data in the system.
+   * 4. Confirms "VERIFIED" if matching or "REJECTED" if mismatch.
    */
   const processAndMatchIDCard = async (dataUrlOrImageSrc, formNumberHint = null) => {
     setScanningCard(true);
-    setScanStatus('AI Engine: Analyzing captured ID card...');
+    setScanStatus('OCR Engine: Analyzing captured ID card...');
     setCapturedCardImage(dataUrlOrImageSrc);
-    setExtractedFaceUrl(null);
 
     try {
       const img = new Image();
@@ -164,22 +157,10 @@ export default function IDVerification() {
         img.onerror = () => resolve();
       });
 
-      // 1. Detect & crop photo portrait from the clicked ID card
-      try {
-        setScanStatus('Extracting facial photo from captured card...');
-        const faceRes = await extractFaceDescriptorFromImage(img);
-        if (faceRes && faceRes.croppedFaceUrl) {
-          setExtractedFaceUrl(faceRes.croppedFaceUrl);
-        }
-      } catch (fErr) {
-        console.warn('Face crop notice:', fErr);
-      }
-
-      // 2. Run OCR & Barcode extraction on the captured picture
+      // 1. Run OCR extraction on the captured picture
       setScanStatus('Scanning Registration / Form No. & Name...');
       let detectedFormNo = formNumberHint || null;
       let detectedName = null;
-      let foundBarcode = null;
       let rawOcrText = '';
 
       try {
@@ -191,10 +172,6 @@ export default function IDVerification() {
           detectedFormNo = ocrRes.formNumber;
         }
         detectedName = ocrRes.possibleName;
-        foundBarcode = ocrRes.barcode;
-        if (foundBarcode) {
-          setBarcodeData(foundBarcode);
-        }
       } catch (oErr) {
         console.warn('OCR processing notice:', oErr);
       }
@@ -204,7 +181,7 @@ export default function IDVerification() {
 
       setScanStatus('Matching extracted details with registered bio-data...');
 
-      // 3. Cross-reference with system bio-data records
+      // 2. Cross-reference with system bio-data records
       let matched = null;
       let score = 95;
 
@@ -212,8 +189,7 @@ export default function IDVerification() {
         const matchRes = await api.post('/auth/match-id-card', {
           formNumber: detectedFormNo,
           extractedName: detectedName,
-          rawText: rawOcrText,
-          barcode: foundBarcode
+          rawText: rawOcrText
         });
 
         if (matchRes.data?.matched && matchRes.data.personnel) {
@@ -224,13 +200,12 @@ export default function IDVerification() {
         console.warn('Server match API notice:', serverErr);
       }
 
-      // 4. Verification Check
+      // 3. Verification Check
       if (matched) {
         setMatchedPersonnel(matched);
         setConfidenceScore(score);
         setExtractedFormNo(matched.formNumber);
         setExtractedName(matched.name);
-        setBarcodeData(foundBarcode || matched.formNumber);
         setCurrentStep(STEPS.VERIFIED_MATCH);
         toast.success(`ID Card Verified: ${matched.name} (${matched.formNumber})`);
       } else {
@@ -287,7 +262,6 @@ export default function IDVerification() {
         setExtractedFormNo(p.formNumber);
         setExtractedName(p.name);
         setConfidenceScore(99);
-        setBarcodeData(p.formNumber);
         setCurrentStep(STEPS.VERIFIED_MATCH);
         toast.success(`Verified: ${p.name}`);
         return;
@@ -314,8 +288,7 @@ export default function IDVerification() {
       const success = await idCardLogin({
         formNumber: matchedPersonnel.formNumber,
         extractedName: matchedPersonnel.name,
-        rawText: `${matchedPersonnel.name} ${matchedPersonnel.formNumber}`,
-        barcode: barcodeData || matchedPersonnel.formNumber
+        rawText: `${matchedPersonnel.name} ${matchedPersonnel.formNumber}`
       });
 
       if (success) {
@@ -373,12 +346,10 @@ export default function IDVerification() {
   // Reset verification flow back to Camera
   const handleReset = () => {
     setCapturedCardImage(null);
-    setExtractedFaceUrl(null);
     setExtractedFormNo('');
     setExtractedName('');
     setManualInputFormNo('');
     setMatchedPersonnel(null);
-    setBarcodeData(null);
     setConfidenceScore(0);
     setUsePasswordAuth(false);
     setPassword('');
@@ -411,11 +382,11 @@ export default function IDVerification() {
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2">
             PRATIBANDH
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/50 text-blue-300">
-              AI ID SCANNER
+              ID CARD SCANNER
             </span>
           </h1>
           <p className="text-xs text-gray-400 mt-1 tracking-widest uppercase font-medium">
-            Live AI ID Card Capture & Bio-Data Verification
+            Official ID Card Verification & Access
           </p>
         </div>
 
@@ -474,18 +445,18 @@ export default function IDVerification() {
                   className="w-full h-full object-cover"
                 />
 
-                {/* ID Card Target Alignment Overlay & Scan Laser */}
+                {/* ID Card Target Alignment Overlay */}
                 <div className="absolute inset-x-8 inset-y-5 border-2 border-blue-400/80 rounded-xl pointer-events-none flex flex-col justify-between p-3 bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
                   <div className="flex justify-between">
                     <span className="w-5 h-5 border-t-2 border-l-2 border-blue-400" />
                     <span className="w-5 h-5 border-t-2 border-r-2 border-blue-400" />
                   </div>
 
-                  {/* Horizontal animated scanning laser line */}
+                  {/* Horizontal animated scanning line */}
                   <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_8px_rgba(96,165,250,0.8)] animate-pulse" />
 
                   <div className="text-center bg-black/85 py-1.5 px-3 rounded-full backdrop-blur-sm self-center border border-blue-500/40 flex items-center gap-2">
-                    <BiBarcodeReader className="text-blue-400 w-4 h-4" />
+                    <FiCreditCard className="text-blue-400 w-4 h-4" />
                     <p className="text-[11px] font-semibold text-blue-300 tracking-wider uppercase">
                       Hold ID Card Here
                     </p>
@@ -497,12 +468,12 @@ export default function IDVerification() {
                   </div>
                 </div>
 
-                {/* Real-time AI Processing Overlay */}
+                {/* Real-time Processing Overlay */}
                 {scanningCard && (
                   <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-20 space-y-3">
                     <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-500/20" />
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-white uppercase tracking-wider">AI Neural Scanner Active</p>
+                      <p className="text-xs font-bold text-white uppercase tracking-wider">ID Card Scanner Active</p>
                       <p className="text-xs text-blue-300 font-medium">{scanStatus}</p>
                     </div>
                   </div>
@@ -606,14 +577,6 @@ export default function IDVerification() {
                         <FiUser className="w-8 h-8 text-gray-500" />
                       </div>
                     )}
-                    {extractedFaceUrl && (
-                      <img
-                        src={extractedFaceUrl}
-                        alt="Extracted Portrait"
-                        className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full border border-green-400 object-cover shadow bg-black"
-                        title="AI Cropped Photo"
-                      />
-                    )}
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -635,17 +598,11 @@ export default function IDVerification() {
                       <p className="text-xs text-blue-300 font-mono font-bold">
                         REGD: {matchedPersonnel?.formNumber}
                       </p>
-                      {barcodeData && (
-                        <span className="text-[10px] font-mono text-gray-300 bg-black/60 px-1.5 py-0.5 rounded border border-gray-700 flex items-center gap-1">
-                          <BiBarcodeReader className="w-3 h-3 text-blue-400" />
-                          {barcodeData}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* AI Multi-Check Diagnostics Grid */}
+                {/* Diagnostics Grid */}
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
                   <div className="p-2 rounded-lg bg-black/40 border border-gray-800">
                     <p className="text-[10px] text-gray-400 uppercase font-semibold">Form No Match</p>

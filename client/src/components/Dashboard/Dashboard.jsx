@@ -12,9 +12,9 @@ import {
   FiShield,
   FiActivity,
   FiLock,
-  FiCheckCircle
+  FiCheckCircle,
+  FiCreditCard
 } from 'react-icons/fi';
-import { BiBarcodeReader } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 
@@ -80,7 +80,7 @@ function Dashboard() {
   const rawQuickActions = [
     { label: 'Create Investigation Case', icon: FiPlus, link: '/cases/new', color: 'bg-[#0b1c3d] hover:bg-[#16356e]' },
     { label: 'Upload Digital Evidence', icon: FiUpload, link: '/documents/upload', color: 'bg-emerald-700 hover:bg-emerald-600' },
-    { label: 'AI ID Card Verification', icon: BiBarcodeReader, link: '/login', color: 'bg-blue-700 hover:bg-blue-600' },
+    { label: 'ID Card Verification', icon: FiCreditCard, link: '/login', color: 'bg-blue-700 hover:bg-blue-600' },
     { label: 'Audit Trail & Per-Name Chart', icon: FiActivity, link: '/audit', color: 'bg-[#d4af37] text-gray-950 font-bold hover:bg-[#c5a030]', adminOnly: true },
   ];
 

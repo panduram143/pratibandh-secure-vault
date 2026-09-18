@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
   const idCardLogin = async (matchPayload) => {
     try {
       const res = await api.post('/auth/id-card-login', matchPayload);
-      const { token: newToken, user: userData, matchScore } = res.data;
+      const { token: newToken, user: userData } = res.data;
 
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -48,27 +48,6 @@ export function AuthProvider({ children }) {
       return true;
     } catch (err) {
       const msg = err.response?.data?.msg || err.response?.data?.message || 'ID Card verification failed';
-      toast.error(msg);
-      return false;
-    }
-  };
-
-  const faceLogin = async (formNumber, faceDescriptor) => {
-    try {
-      const res = await api.post('/auth/face-login', {
-        formNumber,
-        faceDescriptor
-      });
-      const { token: newToken, user: userData, matchScore } = res.data;
-
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setToken(newToken);
-      setUser(userData);
-      toast.success(`Identity Verified! Welcome ${userData.name} (${matchScore || '100%'} match)`);
-      return true;
-    } catch (err) {
-      const msg = err.response?.data?.msg || err.response?.data?.message || 'Biometric verification failed';
       toast.error(msg);
       return false;
     }
@@ -123,7 +102,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, idCardLogin, faceLogin, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, idCardLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

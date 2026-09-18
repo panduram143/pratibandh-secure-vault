@@ -42,11 +42,11 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 |                           CLIENT TIER (React 18 + Vite)                           |
 |                                                                                   |
 |  +---------------------+  +-------------------------+  +-----------------------+  |
-|  |   Government UI     |  |   AI Biometric & OCR    |  |  Canvas Engine        |  |
+|  |   Government UI     |  |   AI OCR Engine         |  |  Canvas Engine        |  |
 |  | - GovHeader (IST)   |  | - Tesseract.js (Wasm)   |  | - Anti-Screenshot     |  |
-|  | - GovFooter         |  | - vladmandic/face-api   |  | - Spotlight Masking   |  |
-|  | - FloatingActions   |  | - BarcodeDetector API   |  | - Forensic Watermark  |  |
-|  | - RBAC Sidebar/Nav  |  | - Image Preprocessing   |  | - Dual-Canvas Render  |  |
+|  | - GovFooter         |  | - Image Preprocessing   |  | - Spotlight Masking   |  |
+|  | - FloatingActions   |  | - RegEx Typo Correction |  | - Forensic Watermark  |  |
+|  | - RBAC Sidebar/Nav  |  | - Form/Badge Matching   |  | - Dual-Canvas Render  |  |
 |  +---------------------+  +-------------------------+  +-----------------------+  |
 |                                     |                                             |
 +-------------------------------------|---------------------------------------------+
@@ -98,7 +98,6 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 | **Toast Notifications**| React Hot Toast | 2.4.1 | Lightweight, accessible status and alert toasts |
 | **Icons & Insignia** | React Icons | 5.0.1 | Standard Feather (`fi`), FontAwesome (`fa`), and BoxIcons (`bi`) sets |
 | **Client OCR Engine** | Tesseract.js | 5.1.0 | Pure WebAssembly optical character recognition on physical ID cards |
-| **Face AI & Biometrics**| @vladmandic/face-api | 1.7.12 | Neural networks for facial landmark detection and 128-d biometric embeddings |
 | **Backend Runtime** | Node.js | v18+ | Event-driven, asynchronous server execution runtime |
 | **Backend Framework** | Express.js | 4.18.2 | REST API endpoints, routing, middleware orchestration |
 | **Database & ODM** | MongoDB + Mongoose | 8.0.3 | Document-oriented NoSQL storage, schema validation, indexing, virtuals |
@@ -135,7 +134,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 
 #### C. Authentication & AI ID Verification
 - **`components/Auth/IDVerification.jsx`**:
-  - *Functionality:* Multi-modal physical ID card capture interface supporting live webcams and photo uploads. Employs image preprocessing, OCR extraction of Form Numbers/Registration Numbers, native barcode detection, and facial bounding box extraction. Matches scanned details against pre-seeded officer bio-data in the database and computes a confidence score before issuing an authentication token.
+  - *Functionality:* Physical ID card capture interface supporting live webcams and photo uploads. Employs image preprocessing, OCR extraction of Form Numbers/Registration Numbers and Officer Names. Matches scanned details against pre-seeded officer bio-data in the database and computes a confidence score before issuing an authentication token.
   - *Why Used:* Eliminates credential sharing and password theft by requiring visual, verifiable physical departmental ID verification.
 - **`components/Auth/Login.jsx`**:
   - *Functionality:* Fallback credential authentication using Form Number/Email and password with automatic registration sync.
@@ -169,7 +168,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 
 #### G. Admin Personnel Management
 - **`components/Admin/ManagePersonnel.jsx`**:
-  - *Functionality:* Super Admin dashboard for registering authorized personnel, uploading official physical ID cards, computing and storing 128-d facial descriptors, setting roles, and activating/deactivating officer accounts.
+  - *Functionality:* Super Admin dashboard for registering authorized personnel, uploading official physical ID cards, enrolling credentials, setting roles, and activating/deactivating officer accounts.
   - *Why Used:* Centralizes access governance and credentials management.
 
 ---
@@ -203,9 +202,9 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
   - `GET /api/auth/me` & `PUT /api/auth/me`: Profile retrieval and metadata updates.
 - **`routes/registeredIds.js`**:
   - `GET /api/registered-ids/verify/:formNumber`: Public form number validation endpoint.
-  - `POST /api/registered-ids/seed-samples`: Biometric sample sync endpoint.
+  - `POST /api/registered-ids/seed-samples`: Sample ID sync endpoint.
   - `GET /api/registered-ids/sample-status`: Check registered personnel count.
-  - `POST /api/registered-ids`: Register new officer with encrypted ID card and 128-d face descriptor (Admin only).
+  - `POST /api/registered-ids`: Register new officer with encrypted ID card (Admin only).
   - `GET /api/registered-ids`, `GET /:id`, `PUT /:id`, `DELETE /:id`: Admin CRUD endpoints.
 - **`routes/cases.js`**:
   - `GET /api/cases`: Filtered case query (by crime type, status, station, dates) with pagination.
@@ -255,7 +254,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 
 ---
 
-### 4.4 AI, OCR & Biometric Computer Vision Pipeline
+### 4.4 AI & OCR Vision Pipeline
 
 #### A. Optical Character Recognition (OCR) Engine (`client/src/utils/ocr.js`)
 - **Library:** `tesseract.js` (WebAssembly port of Google's Tesseract OCR engine).
@@ -263,18 +262,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
   1. Upscales input frame to a minimum of 1200px width.
   2. Applies luminosity grayscale conversion: $Y = 0.299R + 0.587G + 0.114B$.
   3. Applies 30% dynamic contrast stretching to maximize contrast between text and background patterns.
-- **Barcode Detection (`detectBarcodeFromImage`):** Interfaces with the browser's hardware-accelerated `BarcodeDetector` API for formats including Code 128, Code 39, QR Code, Data Matrix, and EAN-13.
-- **OCR Typo Normalization & Regex (`extractFormNumber`):** Employs multi-tier regex matching and character normalization ($O \to 0$, $I/l/| \to 1$, $S \to 5$, $B \to 8$, $Z \to 2$) to recover registration numbers from noisy camera frames.
-
-#### B. Facial Biometric Engine (`client/src/utils/faceApi.js`)
-- **Library:** `@vladmandic/face-api`
-- **Neural Networks Loaded:**
-  1. `TinyFaceDetector`: Fast real-time face detection on video and photo frames.
-  2. `FaceLandmark68Net`: Maps 68 distinct facial geometric landmark coordinates.
-  3. `FaceRecognitionNet`: Computes a 128-dimensional floating point vector embedding representing the unique facial geometry.
-- **Euclidean Distance Matching (`calculateEuclideanDistance`):**
-  $$d(\vec{u}, \vec{v}) = \sqrt{\sum_{i=1}^{128} (u_i - v_i)^2}$$
-  Matches live webcam probe vectors against registered personnel ID photo vectors (threshold: $\le 0.6$).
+- **OCR Typo Normalization & Regex (`extractFormNumber`):** Employs multi-tier regex matching and character normalization ($O \to 0$, $I/l/| \to 1$, $S \to 5$, $B \to 8$, $Z \to 2$) to recover registration numbers and names from noisy camera frames.
 
 ---
 
@@ -339,7 +327,6 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 - `station` & `department` (String)
 - `phone` (String)
 - `idCardImage` (String — path to encrypted stored photo)
-- `faceDescriptor` (Array of 128 Numbers)
 - `addedBy` (ObjectId reference to `User`)
 - `isActive` (Boolean)
 
@@ -356,37 +343,35 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 
 ## 5. End-to-End Data Flow & Operational Pipelines
 
-### Pipeline 1: AI ID Card Scan & Biometric Login Flow
+### Pipeline 1: AI ID Card Scan & OCR Login Flow
 ```
 [User presents Physical ID to Camera]
                │
                ▼
 [Image Captured & Processed on Canvas (Grayscale & Contrast Boost)]
                │
-               ├───────────────────────────────┬───────────────────────────────┐
-               ▼                               ▼                               ▼
-       [Tesseract.js OCR]              [BarcodeDetector API]          [face-api Landmark & Vector]
-    (Extracts Form No/Name)            (Reads Barcode raw value)       (Generates 128-d descriptor)
-               │                               │                               │
-               └───────────────────────────────┼───────────────────────────────┘
-                                               ▼
-                              [POST /api/auth/match-id-card]
-                                               │
-                                               ▼
-                      [Backend matches against RegisteredID Database]
-                   (Exact Form No -> Typo Corrected -> Name Token Match)
-                                               │
-                                               ▼
-                             [Success: Match Score Computed (≥95%)]
-                                               │
-                                               ▼
-                              [POST /api/auth/id-card-login]
-                                               │
-                                               ▼
-                         [AuditLog Generated: Action = "login"]
-                                               │
-                                               ▼
-                     [JWT Token Issued -> AuthContext -> Dashboard Entry]
+               ▼
+       [Tesseract.js OCR Engine]
+    (Extracts Form No / Badge ID / Officer Name)
+               │
+               ▼
+       [POST /api/auth/match-id-card]
+               │
+               ▼
+[Backend matches against RegisteredID Database]
+ (Exact Form No -> Typo Corrected -> Name Token Match)
+               │
+               ▼
+     [Success: Match Score Computed (≥95%)]
+               │
+               ▼
+      [POST /api/auth/id-card-login]
+               │
+               ▼
+ [AuditLog Generated: Action = "login"]
+               │
+               ▼
+[JWT Token Issued -> AuthContext -> Dashboard Entry]
 ```
 
 ---
@@ -458,7 +443,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 | **Dual-Canvas Spotlight Rendering** | Limits visible area to a 130px circle around the cursor. Prevents full-page photographic capture via cameras or external screen recorders while remaining readable for the officer. |
 | **Dynamic Forensic Pixel Watermarking** | Stamping officer credentials and microsecond timestamps into canvas pixels ensures that even if a photo is captured using a smartphone, the exact leaking terminal and personnel can be traced instantly. |
 | **AES-256-CBC with Random Per-File IV** | Industry-standard symmetric cipher recognized by military and government intelligence standards. The random 16-byte IV ensures that two identical documents yield completely different encrypted ciphertexts. |
-| **Client-Side WASM OCR & Face Recognition** | Running Tesseract.js and face-api on the client browser drastically reduces server CPU load, protects biometric privacy by avoiding video streaming to servers, and enables offline capability. |
+| **Client-Side WASM OCR Engine** | Running Tesseract.js in WebAssembly on the client browser eliminates server CPU bottlenecks, protects privacy, and provides instantaneous character recognition from video and photo frames. |
 | **MongoDB Aggregation Pipelines for Audit Analytics** | Multi-stage aggregation pipelines (`$lookup`, `$unwind`, `$group`, `$sort`) compute real-time statistics (times opened, view counts, edit counts per officer) directly in the database engine with maximum performance. |
 | **Statutory 65B Indian Evidence Act Compliance** | Maintains an unalterable chain of custody with IP addresses, timestamps, user IDs, and action categories to ensure digital evidence is admissible in court. |
 
