@@ -227,6 +227,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
   - `GET /api/audit/user-stats`: MongoDB aggregation pipeline computing total actions, times opened, views, downloads, logins, and edits grouped per officer.
   - `GET /api/audit/user/:userId`: User-specific audit history.
   - `GET /api/audit/document/:docId`: Document-specific chain-of-custody history.
+  - `DELETE /api/audit/reset`: Admin-only reset and permanent purge of all historical audit trail entries.
 - **`routes/collaboration.js`**:
   - `GET /api/collaboration/shared-with-us`: Cases shared with current station.
   - `GET /api/collaboration/shared-by-us`: Cases shared by current station to external nodes.

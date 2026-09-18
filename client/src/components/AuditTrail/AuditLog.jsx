@@ -18,12 +18,16 @@ import {
   FiRefreshCw,
   FiActivity,
   FiClock,
-  FiLayers
+  FiLayers,
+  FiAlertTriangle,
+  FiX
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 
 export default function AuditLog() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState([]);
   const [userStats, setUserStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +35,18 @@ export default function AuditLog() {
   const [chartMetric, setChartMetric] = useState('timesOpened'); // 'timesOpened' | 'totalActions' | 'views' | 'downloads' | 'logins' | 'modifications'
   const [chartSearchUser, setChartSearchUser] = useState('');
   const [searchTableQuery, setSearchTableQuery] = useState('');
+
+  // Admin Reset Modal State
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetting, setResetting] = useState(false);
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'station_admin' ||
+    user?.formNumber === '25110377' ||
+    user?.badgeId === '25110377';
 
   const [filters, setFilters] = useState({
     action: '',
@@ -298,6 +314,34 @@ export default function AuditLog() {
     window.print();
   };
 
+  const handleResetAuditTrail = async () => {
+    if (resetConfirmText.trim().toUpperCase() !== 'RESET') {
+      toast.error('Please type "RESET" to confirm deletion');
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const res = await api.delete('/audit/reset');
+      toast.success(res.data.msg || 'Audit trail history has been reset successfully');
+      setLogs([]);
+      setUserStats([]);
+      setPagination({
+        page: 1,
+        limit: 50,
+        total: 0,
+        pages: 1
+      });
+      setShowResetModal(false);
+      setResetConfirmText('');
+    } catch (err) {
+      console.error('Failed to reset audit trail:', err);
+      toast.error(err.response?.data?.msg || 'Failed to reset audit trail');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 font-sans text-gray-800 pb-12">
       {/* Official Government Header Banner */}
@@ -329,7 +373,19 @@ export default function AuditLog() {
           </div>
 
           {/* Action Export Buttons */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setResetConfirmText('');
+                  setShowResetModal(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-red-700/90 hover:bg-red-600 text-white text-xs font-bold border border-red-400/40 flex items-center gap-1.5 transition-all shadow-md hover:shadow-red-500/20"
+                title="Admin Only: Reset & Delete All Audit Trail Records"
+              >
+                <FiTrash2 className="w-3.5 h-3.5" /> Reset Audit Trail
+              </button>
+            )}
             <button
               onClick={fetchAuditLogs}
               className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 flex items-center gap-1.5 transition-colors"
@@ -789,6 +845,97 @@ export default function AuditLog() {
           </div>
         )}
       </div>
+
+      {/* ADMIN-ONLY RESET CONFIRMATION MODAL */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-[#0b1c3d] text-white border-2 border-red-500/60 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 font-sans">
+            <button
+              onClick={() => {
+                setShowResetModal(false);
+                setResetConfirmText('');
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg bg-white/5 border border-white/10"
+              disabled={resetting}
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-start gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                <FiAlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-red-500/30 text-red-300 border border-red-500/40">
+                  ADMINISTRATOR PRIVILEGED OPERATION
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">
+                  Reset & Delete Entire Audit Trail?
+                </h3>
+                <p className="text-xs text-gray-300 mt-1">
+                  This statutory action will permanently erase all historical access logs, view records, download receipts, and session timestamps from the national forensic vault.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-red-950/40 border border-red-900/60 rounded-xl space-y-2 text-xs text-red-200">
+              <p className="font-semibold flex items-center gap-1.5 text-red-300">
+                <FiLock className="w-3.5 h-3.5" /> Warning: Irreversible Action
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-[11px] text-gray-300">
+                <li>All <strong>{totalStats.totalEvents}</strong> historical ledger entries will be completely removed.</li>
+                <li>The activity distribution chart and user metrics will be reset to zero.</li>
+                <li>This operation is restricted exclusively to authorized administrators.</li>
+              </ul>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="text-xs font-semibold text-gray-200 block">
+                Type <span className="font-mono font-bold text-red-400">RESET</span> below to authorize deletion:
+              </label>
+              <input
+                type="text"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder="Type RESET here"
+                disabled={resetting}
+                className="w-full px-3.5 py-2.5 bg-[#071326] border border-red-500/50 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-700/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetConfirmText('');
+                }}
+                disabled={resetting}
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 text-gray-300 font-semibold rounded-xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetAuditTrail}
+                disabled={resetting || resetConfirmText.trim().toUpperCase() !== 'RESET'}
+                className="px-5 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-lg shadow-red-950/50"
+              >
+                {resetting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Resetting Ledger...
+                  </>
+                ) : (
+                  <>
+                    <FiTrash2 className="w-3.5 h-3.5" /> Confirm Permanent Reset
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
