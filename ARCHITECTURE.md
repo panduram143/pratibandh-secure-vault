@@ -1,290 +1,484 @@
-# 🏛️ PRATIBANDH — Complete System Architecture & Technical Specifications
+# 🏛️ PRATIBANDH — Master System Architecture & Technical Reference Manual
 
-> **System Name:** PRATIBANDH (Secure Digital Document Management & Investigation Vault)  
+> **System Name:** PRATIBANDH (National Secure Digital Evidence Vault & Forensic Investigation Repository)  
 > **Problem Statement:** SIH 1690 — Centralized, Encrypted & Forensic-Tracked Legal & Investigation Repository  
-> **Statutory Compliance:** Section 65B Indian Evidence Act 1872, Information Technology Act 2000, ISO/IEC 27001, CCTNS Interoperability  
-> **Version:** 2.4.0 (Gov-Build)
+> **Statutory Compliance:** Section 65B of the Indian Evidence Act 1872, Information Technology Act 2000, ISO/IEC 27001:2022, Interoperable Criminal Justice System (ICJS), CCTNS Architecture  
+> **Version:** 3.0.0 (Gov-Build Production Architecture)  
+> **Classification:** RESTRICTED • LAW ENFORCEMENT & JUDICIAL FORENSIC REPOSITORY
 
 ---
 
 ## 📑 Table of Contents
-1. [Executive Summary & Core Objectives](#1-executive-summary--core-objectives)
-2. [High-Level Architecture Diagram](#2-high-level-architecture-diagram)
-3. [Technology Stack Breakdown](#3-technology-stack-breakdown)
-4. [Bit-by-Bit Component & Module Specifications](#4-bit-by-bit-component--module-specifications)
-   - [4.1 Frontend Presentation Layer (Client)](#41-frontend-presentation-layer-client)
-   - [4.2 Backend Application Layer (Server)](#42-backend-application-layer-server)
-   - [4.3 Security & Cryptographic Subsystem](#43-security--cryptographic-subsystem)
-   - [4.4 AI, OCR & Biometric Computer Vision Pipeline](#44-ai-ocr--biometric-computer-vision-pipeline)
-   - [4.5 Database Schemas & Storage Layer](#45-database-schemas--storage-layer)
-   - [4.6 Real-Time Communication Layer](#46-real-time-communication-layer)
-5. [End-to-End Data Flow & Operational Pipelines](#5-end-to-end-data-flow--operational-pipelines)
-6. [Why Each Technology & Design Pattern Was Chosen](#6-why-each-technology--design-pattern-was-chosen)
+
+1. [Executive Summary & Statutory Framework](#1-executive-summary--statutory-framework)
+2. [File Extensions & Format Standards Encyclopedia](#2-file-extensions--format-standards-encyclopedia)
+3. [High-Level System Architecture Diagram](#3-high-level-system-architecture-diagram)
+4. [Complete Codebase Directory Tree & Inventory](#4-complete-codebase-directory-tree--inventory)
+5. [Bit-by-Bit Frontend Component & Module Architecture (`client/`)](#5-bit-by-bit-frontend-component--module-architecture-client)
+6. [Bit-by-Bit Backend Server & Controller Architecture (`server/`)](#6-bit-by-bit-backend-server--controller-architecture-server)
+7. [Cryptographic Subsystem & Binary File Security (`.enc`)](#7-cryptographic-subsystem--binary-file-security-enc)
+8. [AI-Assisted OCR Vision & Bio-Data Matching Engine](#8-ai-assisted-ocr-vision--bio-data-matching-engine)
+9. [Anti-Screenshot Dual-Canvas Rendering Engine](#9-anti-screenshot-dual-canvas-rendering-engine)
+10. [Audit Trail, User Activity Chart & Admin Reset Purge Safeguards](#10-audit-trail-user-activity-chart--admin-reset-purge-safeguards)
+11. [Database Schemas, Indexing & Storage Layer](#11-database-schemas-indexing--storage-layer)
+12. [End-to-End Operational Execution Pipelines](#12-end-to-end-operational-execution-pipelines)
+13. [Technology Selection Rationales & Architectural Justifications](#13-technology-selection-rationales--architectural-justifications)
 
 ---
 
-## 1. Executive Summary & Core Objectives
+## 1. Executive Summary & Statutory Framework
 
-PRATIBANDH is an enterprise-grade digital evidence and case document repository engineered for police departments, investigative agencies, judicial courts, and forensic laboratories.
+**PRATIBANDH** is a specialized, tamper-evident digital document management repository and forensic tracking platform built for law enforcement agencies (state and central police forces), investigative bodies (CBI, NIA, CID), forensic science laboratories (FSL), and judicial court registries.
 
-### Core Problems Solved:
-1. **Evidence Leakage & Unauthorized Screen Captures:** Traditional web-based viewers render DOM text that can be easily inspected, copied, or captured in full via high-resolution screenshots.
-2. **Untraceable Breaches:** Lack of granular forensic stamping on viewed assets leaves investigators unable to identify the source of leaked photographs or documents.
-3. **Evidence Tampering & Broken Chain of Custody:** Documents stored in plaintext or unencrypted storage are vulnerable to unauthorized modification or deletion without an immutable audit trail.
-4. **Inter-Jurisdictional Silos:** Inefficient inter-station document sharing creates friction in multi-state and multi-station investigations.
-
----
-
-## 2. High-Level Architecture Diagram
-
-```
-+-----------------------------------------------------------------------------------+
-|                           CLIENT TIER (React 18 + Vite)                           |
-|                                                                                   |
-|  +---------------------+  +-------------------------+  +-----------------------+  |
-|  |   Government UI     |  |   AI OCR Engine         |  |  Canvas Engine        |  |
-|  | - GovHeader (IST)   |  | - Tesseract.js (Wasm)   |  | - Anti-Screenshot     |  |
-|  | - GovFooter         |  | - Image Preprocessing   |  | - Spotlight Masking   |  |
-|  | - FloatingActions   |  | - RegEx Typo Correction |  | - Forensic Watermark  |  |
-|  | - RBAC Sidebar/Nav  |  | - Form/Badge Matching   |  | - Dual-Canvas Render  |  |
-|  +---------------------+  +-------------------------+  +-----------------------+  |
-|                                     |                                             |
-+-------------------------------------|---------------------------------------------+
-                                      | HTTPS (Axios) / WSS (Socket.IO)
-+-------------------------------------v---------------------------------------------+
-|                        APPLICATION SERVER (Node.js + Express)                     |
-|                                                                                   |
-|  +-----------------------------------------------------------------------------+  |
-|  | Middleware Pipeline: Helmet | CORS | Morgan | BodyParser | Multer           |  |
-|  | JWT Authentication (auth.js) & Role-Based Access Control (roleCheck.js)      |  |
-|  | Immutable Audit Interceptor (auditLogger.js)                                |  |
-|  +-----------------------------------------------------------------------------+  |
-|                                                                                   |
-|  +--------------------+ +-------------------+ +-------------------+ +----------+  |
-|  | Auth & ID Registry | | Cases Controller  | | Docs & Encryption | | Collab   |  |
-|  | - /api/auth        | | - /api/cases      | | - /api/documents  | | - /api/  |  |
-|  | - /api/registered- | | - Search & Filter | | - AES-256-CBC     | |   collab |  |
-|  |   ids              | | - Crime Analytics | | - Upload/Download | | - Share  |  |
-|  +--------------------+ +-------------------+ +-------------------+ +----------+  |
-|                                                                                   |
-|  +-----------------------------------------------------------------------------+  |
-|  | Audit & Analytics Engine: /api/audit (Times Opened, Aggregates, CSV Export)|  |
-|  +-----------------------------------------------------------------------------+  |
-+-----------------------------------------------------------------------------------+
-                                      |
-         +----------------------------+----------------------------+
-         |                                                         |
-+--------v--------------------------------+       +----------------v----------------+
-|          DATABASE (MongoDB Atlas)       |       |   ENCRYPTED STORAGE (Disk)      |
-|  - Users Collection                     |       |  - server/uploads/*.pdf.enc     |
-|  - Cases Collection                     |       |  - server/uploads/idcards/*.enc |
-|  - Documents Collection                 |       |  - AES-256 Encrypted Binaries   |
-|  - AuditLogs Collection                 |       |  - IV Prepend Buffer            |
-|  - RegisteredIDs Collection             |       +---------------------------------+
-+-----------------------------------------+
-```
+### Primary Operational Mandates:
+1. **Zero Unencrypted Disk Exposure:** Digital evidence (FIRs, charge sheets, post-mortem reports, ballistics, intercepted media) is stored in encrypted binary format (`.enc`) using AES-256-CBC with dynamically generated random 16-byte Initialization Vectors (IV).
+2. **Anti-Extraction Document Viewing:** Digital documents are rendered on offscreen HTML5 canvases with cursor-tracked spotlight masking and baked-in dynamic forensic watermarks (identifying the reviewing officer, station, registration number, and millisecond timestamp), defeating smartphone photography and screen captures.
+3. **Statutory Chain of Custody (Section 65B Indian Evidence Act 1872):** Every view, download, modification, and login event is signed and permanently logged in an immutable, searchable audit ledger.
+4. **Instant Multi-Tier Verification:** Field personnel authenticate seamlessly using local WebAssembly Optical Character Recognition (OCR) to read physical departmental ID cards and match against verified personnel records.
+5. **Admin Master Reset Safeguard:** An exclusive, privileged safeguard allows authorized administrators to reset and clear historical audit ledgers under a two-step validation protocol.
 
 ---
 
-## 3. Technology Stack Breakdown
+## 2. File Extensions & Format Standards Encyclopedia
 
-| Layer / Component | Technology Used | Version | Purpose in System |
+Every file format used across the PRATIBANDH ecosystem is intentionally selected for performance, type safety, security, or build optimization:
+
+| Extension | Formal Name | What It Means & How It Operates | Role in PRATIBANDH Codebase |
 | :--- | :--- | :--- | :--- |
-| **Frontend Framework** | React.js | 18.2.0 | Reactive component architecture, virtual DOM for performant UI state |
-| **Frontend Build Tool** | Vite | 5.1.4 | Lightning-fast HMR, ES module bundling, optimized production builds |
-| **CSS & Design System** | TailwindCSS | 3.4.1 | Utility-first responsive design, custom Indian Government theme palette |
-| **Client-Side Routing** | React Router DOM | 6.22.1 | Declarative client-side routing, protected and role-restricted routes |
-| **HTTP Client** | Axios | 1.6.7 | Interceptor-based API communication, automated JWT Bearer header injection |
-| **Toast Notifications**| React Hot Toast | 2.4.1 | Lightweight, accessible status and alert toasts |
-| **Icons & Insignia** | React Icons | 5.0.1 | Standard Feather (`fi`), FontAwesome (`fa`), and BoxIcons (`bi`) sets |
-| **Client OCR Engine** | Tesseract.js | 5.1.0 | Pure WebAssembly optical character recognition on physical ID cards |
-| **Backend Runtime** | Node.js | v18+ | Event-driven, asynchronous server execution runtime |
-| **Backend Framework** | Express.js | 4.18.2 | REST API endpoints, routing, middleware orchestration |
-| **Database & ODM** | MongoDB + Mongoose | 8.0.3 | Document-oriented NoSQL storage, schema validation, indexing, virtuals |
-| **Security Headers** | Helmet | 7.1.0 | HTTP security headers (CSP, HSTS, frameguard, XSS filter) |
-| **Cross-Origin Control**| CORS | 2.8.5 | Cross-Origin Resource Sharing control for safe multi-client access |
-| **File Multipart Engine**| Multer | 1.4.5-lts.1 | Streaming file upload handling with disk storage and type filters |
-| **Password Hashing** | BcryptJS | 2.4.3 | Adaptive one-way hashing with salt generation (12 rounds) |
-| **Token Authentication**| JSON Web Token | 9.0.2 | Stateless HMAC SHA-256 bearer tokens with 24-hour expiration |
-| **Data Encryption** | Node.js Crypto | Native | AES-256-CBC symmetric cipher for physical files and metadata |
-| **Real-time Engine** | Socket.IO | 4.7.2 | WebSockets for live notifications, cross-station room collaboration |
-| **Dev Tooling** | Nodemon | 3.0.2 | Hot-reloading development server |
+| **`.md`** | **Markdown Document** | Plain-text formatting syntax designed to be converted to HTML. Uses human-readable conventions (`#`, `*`, `[]`, ````). | Serves as system documentation (`ARCHITECTURE.md`, `README.md`). Provides architecture guides, deployment steps, and statutory compliance references. |
+| **`.jsx`** | **JavaScript XML** | A React syntax extension allowing HTML-like component templates to be written directly inside JavaScript files. Transpiled by Vite into standard `React.createElement` calls. | Powers all client-side UI components (`Dashboard.jsx`, `AuditLog.jsx`, `DocumentViewer.jsx`, `IDVerification.jsx`, `CaseDetail.jsx`, etc.). |
+| **`.js`** | **JavaScript (ES/CJS)** | Standard ECMAScript code. On the server, executed in Node.js via CommonJS (`require`/`module.exports`). On the client, bundled as ES Modules (`import`/`export`). | Powers backend server logic (`server.js`, `routes/*.js`, `models/*.js`, `middleware/*.js`, `encryption.js`) and client utilities (`api.js`, `ocr.js`). |
+| **`.json`** | **JavaScript Object Notation** | Lightweight data-interchange format composed of key-value pairs and arrays. Parsed natively across JavaScript and HTTP APIs. | Manages project configurations and dependencies (`package.json`, `package-lock.json`), build settings, and API request/response payloads. |
+| **`.enc`** | **Encrypted Binary File** | Proprietary encrypted file format containing an AES-256-CBC ciphertext buffer prepended with a 16-byte random Initialization Vector (IV). | Applied to all uploaded evidentiary PDFs and scanned ID cards in `server/uploads/` to prevent unauthorized disk reading. |
+| **`.html`** | **HyperText Markup Language** | The root document structure interpreted by web browsers to load styles, fonts, and script bundles. | `client/index.html` acts as the single-page application (SPA) entry point where Vite mounts the root React virtual DOM tree (`#root`). |
+| **`.css`** | **Cascading Style Sheets** | Stylesheet language describing presentation semantics. Enhanced via PostCSS and Tailwind CSS directives (`@tailwind base`, `@tailwind components`, `@tailwind utilities`). | `client/src/index.css` defines the official Indian Government color scheme (Navy `#0b1c3d`, Ashoka Gold `#d4af37`, Tricolor Saffron/Green accents). |
+| **`.gitignore`** | **Git Ignore Specification** | Plain-text configuration instructing Git version control to ignore untracked files like local secrets, environment keys, and heavy build artifacts. | Prevents staging `node_modules/`, local `.env` secrets, temporary unencrypted uploads, and production `dist/` builds. |
+| **`.lock`** | **Dependency Lockfile** | Detailed manifest capturing exact dependency versions, sub-dependencies, and SHA-512 integrity hashes. | `package-lock.json` guarantees 100% deterministic builds across deployment environments without version drift. |
+| **`.svg`** | **Scalable Vector Graphics** | XML-based 2D vector graphics that scale infinitely without loss of resolution. | Used for high-fidelity government crests, Ashoka Lion emblems, and UI icons. |
 
 ---
 
-## 4. Bit-by-Bit Component & Module Specifications
+## 3. High-Level System Architecture Diagram
 
-### 4.1 Frontend Presentation Layer (`client/src`)
+```
++===================================================================================================+
+|                                    CLIENT PRESENTATION LAYER                                      |
+|                               (React 18 • Vite 5 • TailwindCSS 3.4)                               |
+|                                                                                                   |
+|  +--------------------------------+  +--------------------------------+  +---------------------+  |
+|  |     Government Design System   |  |        AI Vision Engine        |  |  Dual-Canvas Engine |  |
+|  | - GovHeader (IST Real-Time)    |  | - Tesseract.js (WASM OCR)      |  | - Offscreen Canvas  |  |
+|  | - GovFooter & 65B Disclaimers  |  | - Image Luminosity Preprocess  |  | - Spotlight Masking |  |
+|  | - FloatingActions Speed-Dial   |  | - Typo-Correction RegEx Matrix |  | - Pixel Watermarks  |  |
+|  | - RBAC Protected Sidebar       |  | - Form Number & Name Extraction|  | - Capture Blockers  |  |
+|  +--------------------------------+  +--------------------------------+  +---------------------+  |
+|                                   |                                   |                           |
+|                      Axios Client | (JWT Bearer Auth)                 | WebSocket (Socket.IO)     |
++===================================|===================================|===========================+
+                                    | HTTPS Rest APIs                   | Real-time Alerts
++===================================v===================================v===========================+
+|                                   APPLICATION BACKEND SERVER                                      |
+|                                    (Node.js 18+ • Express 4.18)                                   |
+|                                                                                                   |
+|  +---------------------------------------------------------------------------------------------+  |
+|  | Middleware Pipeline: Helmet (CSP/HSTS) • CORS • Morgan • BodyParser • Multer Streaming       |  |
+|  | Authentication (auth.js) • RBAC Gatekeeper (roleCheck.js) • Audit Interceptor (auditLogger)  |  |
+|  +---------------------------------------------------------------------------------------------+  |
+|                                                                                                   |
+|  +-----------------------+ +----------------------+ +---------------------+ +-----------------+  |
+|  | Auth & ID Controller  | | Cases Controller     | | Document Controller | | Inter-Station   |  |
+|  | - /api/auth           | | - /api/cases         | | - /api/documents    | |   Collaboration |  |
+|  | - /api/registered-ids | | - Criminal Taxonomy  | | - AES-256 Encrypt   | | - /api/collab   |  |
+|  | - ID Card Validation  | | - Search & Analytics | | - Ephemeral Stream  | | - Share Approval|  |
+|  +-----------------------+ +----------------------+ +---------------------+ +-----------------+  |
+|                                                                                                   |
+|  +---------------------------------------------------------------------------------------------+  |
+|  | Audit & Compliance Engine: /api/audit (Times-Opened Chart, MongoDB Aggregation, Admin Reset)|  |
+|  +---------------------------------------------------------------------------------------------+  |
++===================================================================================================+
+                                    |                                   |
+         +--------------------------+--------------------+                  |
+         |                                               |                  |
++--------v-----------------------------------+ +---------v------------------v-----------------------+
+|        DATABASE CLUSTER (MongoDB)          | |          ENCRYPTED DISK STORAGE VAULT              |
+|  - Users (Credentials, RBAC Roles)         | |  - server/uploads/*.pdf.enc                        |
+|  - Cases (FIRs, Suspects, Metadata)        | |  - server/uploads/idcards/*.enc                    |
+|  - Documents (Encrypted Pointers, Tags)    | |  - 16-byte Cryptographic IV Prepend Buffer         |
+|  - AuditLogs (Immutable Event Ledger)      | |  - Ephemeral Decrypted Buffers Auto-Purged         |
+|  - RegisteredIDs (Departmental Bio-Data)   | +----------------------------------------------------+
++--------------------------------------------+
+```
 
-#### A. Core Application & State Management
-- **`App.jsx`**: Main routing tree. Configures `ProtectedRoute` with strict RBAC checking (`super_admin`, `station_admin`, `officer`, etc.) and mounts global toast notifications.
-- **`context/AuthContext.jsx`**: Centralized authentication context provider. Manages token persistence in `localStorage`, user state, automated profile loading (`/api/auth/me`), login, logout, and AI ID Card login dispatcher.
-- **`utils/api.js`**: Axios instance configured with base URL `/api` and an automatic request interceptor that injects `Authorization: Bearer <token>` into every outgoing HTTP request.
+---
 
-#### B. Government Portal Frame & Common Components
+## 4. Complete Codebase Directory Tree & Inventory
+
+```
+PRATIBANDH-ROOT/
+├── ARCHITECTURE.md              # Master System Architecture & Reference Specification
+├── README.md                    # Project Overview, Setup Instructions & Quick Start
+├── package.json                 # Workspace Root Package Configuration
+├── .gitignore                   # Version Control Ignore Rules
+│
+├── client/                      # Frontend Application (React 18 + Vite)
+│   ├── index.html               # SPA Entry HTML Template
+│   ├── vite.config.js           # Vite Bundler & HMR Configuration
+│   ├── tailwind.config.js       # Tailwind CSS Design System & Palette Configuration
+│   ├── postcss.config.js        # PostCSS Plugins Pipeline
+│   ├── package.json             # Frontend Dependencies & Scripts
+│   ├── package-lock.json        # Frontend Deterministic Lockfile
+│   └── src/
+│       ├── main.jsx             # React Application Bootstrap & DOM Mount
+│       ├── App.jsx              # Client Route Tree, Protected Routes & Toast Anchor
+│       ├── index.css            # Tailwind Base, Theme Directives & Animations
+│       │
+│       ├── context/
+│       │   └── AuthContext.jsx  # Central Authentication State, Login & Token Sync
+│       │
+│       ├── utils/
+│       │   ├── api.js           # Axios Instance with JWT Request Interceptor
+│       │   └── ocr.js           # Tesseract.js OCR Pipeline, Grayscale & Regex Parser
+│       │
+│       └── components/
+│           ├── Common/
+│           │   ├── GovHeader.jsx       # National Emblem, Tricolor, IST Live Clock
+│           │   ├── GovFooter.jsx       # Statutory Disclaimers, NIC/MHA Portal Links
+│           │   └── FloatingActions.jsx # Speed-Dial Floating Menu (Scroll, Help, Scan)
+│           │
+│           ├── Layout/
+│           │   ├── Layout.jsx   # Master Wrapper (Header, Sidebar, Main, Footer)
+│           │   ├── Navbar.jsx   # Top Navigation Bar with Officer Profile & Logout
+│           │   └── Sidebar.jsx  # Left Navigation Sidebar with Strict Role Filtering
+│           │
+│           ├── Auth/
+│           │   ├── IDVerification.jsx # ID Card Scan & OCR-Driven Login Interface
+│           │   └── Login.jsx          # Fallback Registration Number/Password Login
+│           │
+│           ├── Dashboard/
+│           │   └── Dashboard.jsx      # Executive Analytics, Quick Tools & Crime Charts
+│           │
+│           ├── Cases/
+│           │   ├── CaseList.jsx       # Case Catalog, Crime Category Filter & Status
+│           │   ├── CaseCreate.jsx     # FIR / Investigation Case Registration Form
+│           │   └── CaseDetail.jsx     # Detailed Case Dossier, Suspects & Evidence
+│           │
+│           ├── Documents/
+│           │   ├── DocumentList.jsx   # Evidence Vault Repository & Filter Grid
+│           │   ├── DocumentUpload.jsx # Multipart Evidence Upload & Metadata Tagging
+│           │   ├── DocumentViewer.jsx # Anti-Screenshot Spotlight Canvas Viewer
+│           │   └── DocumentSearch.jsx # Forensic Full-Text & OCR Snippet Search
+│           │
+│           ├── AuditTrail/
+│           │   └── AuditLog.jsx       # Audit Ledger, Activity Bar Chart & Admin Reset
+│           │
+│           ├── Admin/
+│           │   └── ManagePersonnel.jsx # Officer Enrollment & ID Card Management
+│           │
+│           └── Collaboration/
+│               └── SharedCases.jsx    # Inter-Station Case Request & Access Gateway
+│
+└── server/                      # Backend Application (Node.js + Express + MongoDB)
+    ├── server.js                # Express App, Middleware, Routes & Socket.IO Init
+    ├── package.json             # Backend Dependencies & Start Scripts
+    ├── package-lock.json        # Backend Deterministic Lockfile
+    │
+    ├── config/
+    │   └── db.js                # MongoDB Connection Handler via Mongoose ODM
+    │
+    ├── models/
+    │   ├── User.js              # User Account, Role, Password Hashing Schema
+    │   ├── Case.js              # Investigation Case, Crime Taxonomy Schema
+    │   ├── Document.js          # Evidence Document, Encryption Pointer Schema
+    │   ├── AuditLog.js          # Immutable Access Event & Action Log Schema
+    │   └── RegisteredID.js      # Authorized Personnel Departmental Registry Schema
+    │
+    ├── middleware/
+    │   ├── auth.js              # JWT Bearer Token Validation Middleware
+    │   ├── roleCheck.js         # Role-Based Access Control (RBAC) Gatekeeper
+    │   └── auditLogger.js       # Automatic Audit Event Dispatcher & Formatter
+    │
+    ├── routes/
+    │   ├── auth.js              # Authentication, ID Card Matching & Login Endpoints
+    │   ├── registeredIds.js     # Personnel Registration & ID Verification Routes
+    │   ├── cases.js             # Investigation Case CRUD, Search & Crime Analytics
+    │   ├── documents.js         # Evidence Upload, Decrypted Download & Deletion
+    │   ├── audit.js             # Audit Ledger, Per-User Aggregations & Admin Reset
+    │   ├── search.js            # Unified Full-Text & Forensic Search API
+    │   ├── collaboration.js     # Inter-Station Sharing & Access Request Gateway
+    │   └── dashboard.js         # Executive Metric Aggregations API
+    │
+    └── utils/
+        └── encryption.js        # AES-256-CBC Stream Cipher with Random 16-byte IV
+```
+
+---
+
+## 5. Bit-by-Bit Frontend Component & Module Architecture (`client/`)
+
+### 5.1 Root Core Modules
+
+- **`client/src/main.jsx`**:
+  - *Purpose:* Initial React DOM mounting entry point. Initializes React Strict Mode, attaches the `App` component into the `div#root` container in `index.html`, and attaches `BrowserRouter`.
+  - *Libraries:* `react`, `react-dom/client`, `react-router-dom`.
+- **`client/src/App.jsx`**:
+  - *Purpose:* Defines declarative routing paths and RBAC security gates. Wraps protected routes inside `<ProtectedRoute>` which inspects authentication state and role authorization (`super_admin`, `station_admin`, `officer`, etc.). Mounts the global `<Toaster>` notification container.
+  - *Libraries:* `react-router-dom`, `react-hot-toast`.
+- **`client/src/context/AuthContext.jsx`**:
+  - *Purpose:* React Context Provider managing global authentication state (`user`, `token`, `loading`). Automatically validates saved JWT tokens on startup against `/api/auth/me`. Provides `login()`, `idCardLogin()`, and `logout()` helper dispatchers.
+  - *State:* `user` (Object), `token` (String), `loading` (Boolean).
+- **`client/src/utils/api.js`**:
+  - *Purpose:* Axios HTTP client configured with a base URL of `/api`. Features an automated request interceptor that retrieves the JWT from `localStorage` and injects `Authorization: Bearer <token>` into all outgoing headers.
+- **`client/src/utils/ocr.js`**:
+  - *Purpose:* Client-side WebAssembly Optical Character Recognition utility. Contains image preprocessing functions (minimum 1200px width scaling, luminosity grayscale conversion, dynamic contrast stretching) and regex extraction matrices for recovering registration numbers and officer names.
+
+### 5.2 Common & Frame Components
+
 - **`components/Common/GovHeader.jsx`**:
-  - *Functionality:* Displays the National Tricolor Ribbon, Ashoka Lion Emblem, Ministry of Home Affairs insignia, "RESTRICTED LAW ENFORCEMENT VAULT" classification tag, real-time live clock synchronized to Indian Standard Time (IST), and quick links to GitHub.
-  - *Why Used:* Enforces statutory credibility and standard government design compliance.
+  - *Purpose:* Official government banner featuring the National Emblem of India, Ministry of Home Affairs title, National Security classification tag, and an active real-time clock synced to Indian Standard Time (IST).
 - **`components/Common/GovFooter.jsx`**:
-  - *Functionality:* Displays legal disclaimers (Section 65B Indian Evidence Act 1872, IT Act 2000, ISO/IEC 27001, CCTNS), national portal links (india.gov.in, cybercrime.gov.in, digitalindia.gov.in, nic.in), and GitHub repository source pointers.
-  - *Why Used:* Provides mandatory legal references and institutional transparency.
+  - *Purpose:* Institutional footer rendering Section 65B Indian Evidence Act disclaimers, IT Act 2000 references, ISO/IEC 27001 stamps, and authoritative links to `india.gov.in`, `cybercrime.gov.in`, and `nic.in`.
 - **`components/Common/FloatingActions.jsx`**:
-  - *Functionality:* Floating speed-dial widget in the bottom-right corner offering instant access to: Scroll to Top, GitHub Repository, Audit Trail & Charts, AI ID Card Scanner, Evidence Document Upload, New Case Creation, and National Helpline modal (1930 Cyber Crime helpline).
-  - *Why Used:* Enhances investigator workflow efficiency during critical incident operations.
+  - *Purpose:* Fixed bottom-right speed-dial widget offering quick actions: Scroll-to-Top, National 1930 Cyber Crime Helpline Modal, ID Card Verification shortcut, Evidence Document Upload, New Case Creation, and Audit Trail Ledger shortcut.
 
-#### C. Authentication & AI ID Verification
+### 5.3 Authentication & Personnel Management
+
 - **`components/Auth/IDVerification.jsx`**:
-  - *Functionality:* Physical ID card capture interface supporting live webcams and photo uploads. Employs image preprocessing, OCR extraction of Form Numbers/Registration Numbers and Officer Names. Matches scanned details against pre-seeded officer bio-data in the database and computes a confidence score before issuing an authentication token.
-  - *Why Used:* Eliminates credential sharing and password theft by requiring visual, verifiable physical departmental ID verification.
+  - *Purpose:* Primary authentication portal. Supports capturing physical departmental ID cards via live camera stream or file upload. Preprocesses the image, executes Tesseract.js OCR, matches extracted credentials against the backend bio-data database via `/api/auth/match-id-card`, and logs the officer in upon successful verification.
 - **`components/Auth/Login.jsx`**:
-  - *Functionality:* Fallback credential authentication using Form Number/Email and password with automatic registration sync.
-  - *Why Used:* Allows secondary access when camera hardware is unavailable or during terminal maintenance.
-
-#### D. Anti-Screenshot Document Viewer & Forensic Engine
-- **`components/Documents/DocumentViewer.jsx`**:
-  - *Functionality:*
-    1. **Offscreen Canvas Rendering:** Generates the sharp document text and classification headers on a virtual memory canvas.
-    2. **Spotlight Masking:** The primary displayed canvas renders a heavily blurred (10px Gaussian blur) version. Only a circular area (radius: 130px) following the officer's cursor is rendered sharp using 2D clipping paths.
-    3. **Forensic Watermarking:** Repeated, rotated (-25°) watermarks bearing `CONFIDENTIAL • OFFICER NAME • FORM NO • ISO TIMESTAMP` are baked directly into the canvas pixels.
-    4. **Hardware Capture Deterrents:** Disables right-click context menus, intercepts `Ctrl+P`, `Ctrl+S`, `Ctrl+U`, and `PrintScreen` key shortcuts.
-    5. **Granular Deletion Control:** Allows only the original uploader or a `super_admin` to permanently delete the document with confirmation modals.
-  - *Why Used:* Prevents full-page digital screenshot extraction and makes smartphone photography instantly traceable to the leaking terminal.
-
-#### E. Audit Trail & Analytics
-- **`components/AuditTrail/AuditLog.jsx`**:
-  - *Functionality:*
-    1. **Interactive Activity Bar Chart:** Visualizes access distributions across officers, ranking them by "Times Opened / Accessed", "Doc Views", "Downloads", "Logins", and "Modifications". Features multi-colored segmented progress bars showing proportional behavior.
-    2. **Tamper-Evident Record Table:** Tabular listing of each audit event displaying IST timestamps, officer name, Form Number, action badge, target resource, details, and client IP.
-    3. **Export Engine:** One-click generation and download of statutory CSV audit reports and browser print formatting.
-  - *Why Used:* Fulfills Section 65B Indian Evidence Act admissibility requirements by maintaining an unbroken digital chain of custody.
-
-#### F. Case Management & Collaboration
-- **`components/Cases/CaseList.jsx`, `CaseCreate.jsx`, `CaseDetail.jsx`**:
-  - *Functionality:* Full lifecycle case file management with auto-generated case IDs (`CASE-YYYY-XXXXX`), crime category tagging (*Murder, Rape, Theft, Cybercrime, Fraud, Kidnapping, etc.*), suspect/victim demographic profiling, priority grading, and status tracking (*Open, Under Investigation, Charge Sheeted, Closed*).
-  - *Why Used:* Organizes complex criminal investigations with structured metadata and fast retrieval.
-- **`components/Collaboration/SharedCases.jsx`**:
-  - *Functionality:* Multi-station request-and-approval workflow for inter-jurisdictional evidence sharing (*Shared With Us* / *Shared By Us*).
-  - *Why Used:* Enables seamless inter-agency collaboration while preserving strict access boundaries.
-
-#### G. Admin Personnel Management
+  - *Purpose:* Secondary credential login portal allowing entry via Registration/Form Number or Official Email alongside password authentication.
 - **`components/Admin/ManagePersonnel.jsx`**:
-  - *Functionality:* Super Admin dashboard for registering authorized personnel, uploading official physical ID cards, enrolling credentials, setting roles, and activating/deactivating officer accounts.
-  - *Why Used:* Centralizes access governance and credentials management.
+  - *Purpose:* Admin-only personnel management console. Allows enrolling new officers, uploading encrypted ID card photos, assigning stations/departments/roles, viewing active rosters, and activating/deactivating accounts.
+
+### 5.4 Evidentiary & Investigation Modules
+
+- **`components/Dashboard/Dashboard.jsx`**:
+  - *Purpose:* Executive overview featuring key metric cards (Active Cases, Urgent FIRs, Sealed Evidences, Under Review), real-time audit ledger feed, and interactive Crime Category distribution bars.
+- **`components/Cases/CaseList.jsx`**:
+  - *Purpose:* Searchable and filterable case directory supporting filtering by crime classification (*Murder, Cybercrime, Fraud, Theft, etc.*), status (*Open, Closed, Under Investigation*), and priority (*Low, Medium, High, Critical*).
+- **`components/Cases/CaseCreate.jsx`**:
+  - *Purpose:* Investigation case authoring form allowing officers to enter FIR numbers, crime categories, suspect profiles, victim demographics, and assigned officers.
+- **`components/Cases/CaseDetail.jsx`**:
+  - *Purpose:* Full dossier view displaying case chronology, attached digital evidence documents, suspect profiles, and inter-station sharing controls.
+- **`components/Documents/DocumentList.jsx`**:
+  - *Purpose:* Searchable catalog of digital evidence records showing document IDs, file sizes, AES-256 encryption badges, and direct navigation to view or download.
+- **`components/Documents/DocumentUpload.jsx`**:
+  - *Purpose:* Multipart file upload interface for sealing digital evidence files (PDFs, forensic reports, images) with document classification tags (*Top Secret, Confidential, Restricted*).
+- **`components/Documents/DocumentViewer.jsx`**:
+  - *Purpose:* Proprietary anti-screenshot document viewing engine. Renders documents on an offscreen canvas, displays a blurred primary canvas, renders sharp text only within a 130px cursor spotlight circle, bakes dynamic watermarks into canvas pixels, and intercepts screenshot keys.
+- **`components/Documents/DocumentSearch.jsx`**:
+  - *Purpose:* Deep forensic search engine allowing officers to search across document titles, OCR-extracted text contents, and case metadata.
+- **`components/AuditTrail/AuditLog.jsx`**:
+  - *Purpose:* Comprehensive audit trail dashboard featuring an interactive activity distribution chart (Times Opened per Name, Views, Downloads, Logins), a searchable ledger table, CSV export, and an admin-only two-step modal to reset and purge audit history.
+- **`components/Collaboration/SharedCases.jsx`**:
+  - *Purpose:* Multi-station collaboration hub managing inter-agency evidence sharing requests (*Shared With Us* and *Shared By Us*).
 
 ---
 
-### 4.2 Backend Application Layer (`server/`)
+## 6. Bit-by-Bit Backend Server & Controller Architecture (`server/`)
 
-#### A. Server Initialization & Middleware Pipeline (`server.js`)
-- **Express App & HTTP Server**: Sets up REST routes and binds HTTP server with Socket.IO.
-- **`helmet()`**: Sets secure HTTP response headers to defend against clickjacking, MIME-sniffing, and injection attacks.
-- **`cors()`**: Enables secure cross-origin communication between client and server.
-- **`morgan('dev')`**: Outputs structured HTTP request logs to stdout for backend observability.
-- **`express.json({ extended: true })`**: Parses JSON payloads for API requests.
+### 6.1 Server Bootstrap & Middleware
 
-#### B. Middleware Modules
-- **`middleware/auth.js`**:
-  - *Functionality:* Extracts JWT from the `Authorization: Bearer <token>` header, decodes the user ID, loads the user document from MongoDB, and attaches it to `req.user`.
-  - *Why Used:* Secures private API endpoints against unauthenticated access.
-- **`middleware/roleCheck.js`**:
-  - *Functionality:* Takes an array of permitted roles (e.g. `['super_admin', 'station_admin']`) and blocks requests from users lacking sufficient privileges with a `403 Forbidden` response.
-  - *Why Used:* Enforces Role-Based Access Control across sensitive operations.
-- **`middleware/auditLogger.js`**:
-  - *Functionality:* Provides the `logAction(userId, action, resourceType, resourceId, details, req)` helper. Captures user identity, client IP address (supporting proxy forwarding), user-agent, action type, and timestamp, immediately creating an immutable document in the `AuditLog` collection.
-  - *Why Used:* Guarantees automated, transparent record-keeping across all CRUD and access operations.
+- **`server/server.js`**:
+  - *Purpose:* Initializes Express application, connects to MongoDB via `config/db.js`, configures middleware (`helmet`, `cors`, `morgan`, `express.json`), mounts API route endpoints under `/api/*`, and initializes Socket.IO WebSocket server on HTTP port 5000.
+- **`server/config/db.js`**:
+  - *Purpose:* Handles asynchronous connection to MongoDB using Mongoose, configuring connection pooling and handling reconnection events.
+- **`server/middleware/auth.js`**:
+  - *Purpose:* Extracts JWT token from `Authorization: Bearer <token>` header, verifies signature using `JWT_SECRET`, retrieves the user document from MongoDB, and populates `req.user`.
+- **`server/middleware/roleCheck.js`**:
+  - *Purpose:* Higher-order middleware taking an array of permitted roles (e.g. `['super_admin', 'station_admin']`) and returning `403 Forbidden` if `req.user.role` is unauthorized.
+- **`server/middleware/auditLogger.js`**:
+  - *Purpose:* Exports `logAction(userId, action, resourceType, resourceId, details, req)` which creates an immutable record in the `AuditLog` collection capturing the user, client IP address, action, and timestamp.
 
-#### C. Backend Routes & Controllers
-- **`routes/auth.js`**:
-  - `POST /api/auth/match-id-card`: AI ID Card OCR text matching & bio-data validation.
-  - `POST /api/auth/id-card-login`: Verified ID card scan login and token issuance.
-  - `POST /api/auth/login`: Form Number / Email + Password login.
-  - `POST /api/auth/register`: Admin-restricted personnel account creation.
-  - `GET /api/auth/me` & `PUT /api/auth/me`: Profile retrieval and metadata updates.
-- **`routes/registeredIds.js`**:
-  - `GET /api/registered-ids/verify/:formNumber`: Public form number validation endpoint.
-  - `POST /api/registered-ids/seed-samples`: Sample ID sync endpoint.
-  - `GET /api/registered-ids/sample-status`: Check registered personnel count.
-  - `POST /api/registered-ids`: Register new officer with encrypted ID card (Admin only).
-  - `GET /api/registered-ids`, `GET /:id`, `PUT /:id`, `DELETE /:id`: Admin CRUD endpoints.
-- **`routes/cases.js`**:
-  - `GET /api/cases`: Filtered case query (by crime type, status, station, dates) with pagination.
-  - `POST /api/cases`: Create new investigation case.
-  - `GET /api/cases/:id`: Detailed case view with populated officer and sharing references.
-  - `PUT /api/cases/:id`: Update case status, evidence, or suspect profiles.
-  - `DELETE /api/cases/:id`: Creator/Admin deletion with cascading cleanup of linked encrypted files.
-  - `GET /api/cases/by-crime-type`: MongoDB aggregation pipeline grouping cases by crime category.
-  - `POST /api/cases/:id/share`: Grant access to another station.
-- **`routes/documents.js`**:
-  - `POST /api/documents/upload`: Multer file upload, AES-256 file encryption, and metadata storage.
+### 6.2 REST Controllers & Route Modules
+
+- **`server/routes/auth.js`**:
+  - `POST /api/auth/match-id-card`: Matches OCR tokens against registered officer records.
+  - `POST /api/auth/id-card-login`: Issues JWT upon successful ID card match.
+  - `POST /api/auth/login`: Authenticates user via Registration/Email + Password.
+  - `POST /api/auth/register`: Restricted endpoint for registering admin-level accounts.
+  - `GET /api/auth/me` & `PUT /api/auth/me`: Retrieves/updates authenticated user profile.
+- **`server/routes/registeredIds.js`**:
+  - `GET /api/registered-ids/verify/:formNumber`: Public form number verification endpoint.
+  - `POST /api/registered-ids/seed-samples`: Synchronizes sample officer cards.
+  - `GET /api/registered-ids/sample-status`: Returns counts and items of registered IDs.
+  - `POST /api/registered-ids`: Admin endpoint to register officer with encrypted ID card.
+  - `GET /api/registered-ids`, `GET /:id`, `PUT /:id`, `DELETE /:id`: Admin CRUD management.
+- **`server/routes/cases.js`**:
+  - `GET /api/cases`: Filtered case queries with pagination.
+  - `POST /api/cases`: Creates new investigation case.
+  - `GET /api/cases/:id`: Detailed case retrieval with populated references.
+  - `PUT /api/cases/:id`: Updates case metadata, suspects, or evidence.
+  - `DELETE /api/cases/:id`: Deletes case and triggers cleanup of linked encrypted files.
+  - `GET /api/cases/by-crime-type`: MongoDB aggregation pipeline grouping cases by legal crime type.
+  - `POST /api/cases/:id/share`: Grants case access to another station.
+- **`server/routes/documents.js`**:
+  - `POST /api/documents/upload`: Multer upload, AES-256 encryption, and metadata creation.
   - `GET /api/documents`: List documents with filters and pagination.
   - `GET /api/documents/:id`: Document metadata retrieval with view logging.
-  - `GET /api/documents/:id/download`: On-the-fly decryption to a temporary buffer, streamed download, and auto-cleanup.
-  - `DELETE /api/documents/:id`: Uploader/Admin restricted deletion of disk files and database records.
+  - `GET /api/documents/:id/download`: Decrypts encrypted file on-the-fly to a temporary stream.
+  - `DELETE /api/documents/:id`: Restricts deletion to original uploader or super admin.
   - `GET /api/documents/search`: Full-text search across document titles and OCR text.
-- **`routes/audit.js`**:
-  - `GET /api/audit`: Filtered audit logs with date-range, user, and action filters (Admin only).
-  - `GET /api/audit/recent`: Recent 10 audit logs for dashboard activity feed.
-  - `GET /api/audit/user-stats`: MongoDB aggregation pipeline computing total actions, times opened, views, downloads, logins, and edits grouped per officer.
+- **`server/routes/audit.js`**:
+  - `GET /api/audit`: Admin endpoint for querying filtered audit logs.
+  - `GET /api/audit/recent`: Recent 10 audit logs for dashboard feed.
+  - `GET /api/audit/user-stats`: Aggregates total actions, times opened, views, downloads, logins, and edits per officer.
   - `GET /api/audit/user/:userId`: User-specific audit history.
-  - `GET /api/audit/document/:docId`: Document-specific chain-of-custody history.
-  - `DELETE /api/audit/reset`: Admin-only reset and permanent purge of all historical audit trail entries.
-- **`routes/collaboration.js`**:
+  - `GET /api/audit/document/:docId`: Document-specific chain of custody history.
+  - `DELETE /api/audit/reset` & `DELETE /api/audit/clear`: Admin-only reset and purge of all audit history.
+- **`server/routes/search.js`**:
+  - `GET /api/search`: Unified full-text search across both cases and documents.
+- **`server/routes/collaboration.js`**:
   - `GET /api/collaboration/shared-with-us`: Cases shared with current station.
-  - `GET /api/collaboration/shared-by-us`: Cases shared by current station to external nodes.
-  - `POST /api/collaboration/requests`: Dispatch inter-station sharing request.
-  - `PATCH /api/collaboration/requests/:id`: Approve/reject access requests.
-- **`routes/dashboard.js`**:
-  - `GET /api/dashboard/stats`: Returns count of total cases, open cases, encrypted documents, and pending reviews.
-- **`routes/search.js`**:
-  - `GET /api/search`: Unified full-text search across cases and documents.
+  - `GET /api/collaboration/shared-by-us`: Cases shared by current station.
+  - `POST /api/collaboration/requests`: Dispatches inter-station sharing request.
+  - `PATCH /api/collaboration/requests/:id`: Approves/rejects sharing requests.
+- **`server/routes/dashboard.js`**:
+  - `GET /api/dashboard/stats`: Returns count of active cases, open cases, encrypted documents, and pending reviews.
 
 ---
 
-### 4.3 Security & Cryptographic Subsystem
+## 7. Cryptographic Subsystem & Binary File Security (`.enc`)
 
-#### A. AES-256-CBC File & Text Encryption (`server/utils/encryption.js`)
-- **Algorithm:** `aes-256-cbc`
-- **Key Size:** 256 bits (32 bytes derived from `process.env.ENCRYPTION_KEY`)
-- **Initialization Vector (IV):** 16 cryptographically secure random bytes generated per file via `crypto.randomBytes(16)`.
-- **Storage Strategy:** The 16-byte random IV is prepended to the ciphertext buffer: `[ 16 bytes IV ][ Encrypted File Payload ]`.
-- **Decryption Workflow:** During authorized file download or access, the 16-byte IV is sliced from the header, a decipher stream is instantiated, and decrypted bytes are written to a temporary ephemeral file that is unlinked immediately after stream transmission.
+### AES-256-CBC Symmetric Encryption Architecture
 
-#### B. Password Cryptography & Token Security
-- **Hashing:** `bcryptjs` with 12 salt rounds protects all stored passwords against dictionary and rainbow table attacks.
-- **Tokens:** JSON Web Tokens (JWT) signed with a secret key containing only the immutable MongoDB ObjectId and expiring in 24 hours.
+All evidentiary documents and ID card images stored in `server/uploads/` are secured via `server/utils/encryption.js`:
+
+```
++-------------------------------------------------------------------------+
+|                  AES-256-CBC Encrypted File Structure                   |
+|                                                                         |
+|  +-----------------------------+  +----------------------------------+  |
+|  |   16 Bytes Random IV        |  |   AES-256 Ciphertext Payload     |  |
+|  |   (crypto.randomBytes(16))  |  |   (Encrypted Evidence Binary)    |  |
+|  +-----------------------------+  +----------------------------------+  |
++-------------------------------------------------------------------------+
+```
+
+1. **Random IV Generation:** For every file, a distinct 16-byte cryptographically secure random Initialization Vector (IV) is generated via `crypto.randomBytes(16)`.
+2. **IV Prepending:** The 16-byte IV is prepended to the ciphertext buffer during encryption. This eliminates static IV vulnerabilities and guarantees that two identical files yield completely different ciphertexts.
+3. **On-The-Fly Ephemeral Decryption:** When an authorized user downloads a document:
+   - The server reads the `.enc` file.
+   - Slices the first 16 bytes to extract the IV.
+   - Deciphers the remaining buffer using AES-256-CBC.
+   - Writes to a temporary ephemeral file (`.tmp`), streams it to the client response, and unlinks it immediately upon completion.
 
 ---
 
-### 4.4 AI & OCR Vision Pipeline
+## 8. AI-Assisted OCR Vision & Bio-Data Matching Engine
 
-#### A. Optical Character Recognition (OCR) Engine (`client/src/utils/ocr.js`)
-- **Library:** `tesseract.js` (WebAssembly port of Google's Tesseract OCR engine).
-- **AI Preprocessing (`preprocessImageForOCR`):**
-  1. Upscales input frame to a minimum of 1200px width.
-  2. Applies luminosity grayscale conversion: $Y = 0.299R + 0.587G + 0.114B$.
-  3. Applies 30% dynamic contrast stretching to maximize contrast between text and background patterns.
-- **OCR Typo Normalization & Regex (`extractFormNumber`):** Employs multi-tier regex matching and character normalization ($O \to 0$, $I/l/| \to 1$, $S \to 5$, $B \to 8$, $Z \to 2$) to recover registration numbers and names from noisy camera frames.
+### Client-Side WASM OCR Pipeline (`client/src/utils/ocr.js`)
+
+```
+[Raw Physical ID Card Image]
+            │
+            ▼
+[Image Preprocessing Canvas]
+  ├── Minimum 1200px Width Upscaling
+  ├── Grayscale Conversion: Y = 0.299R + 0.587G + 0.114B
+  └── Dynamic Contrast Boost (+30%)
+            │
+            ▼
+[Tesseract.js WASM Engine]
+  └── Optical Character Extraction
+            │
+            ▼
+[RegEx & Typo-Correction Matrix]
+  ├── Character Substitutions: O->0, I/l/|->1, S->5, B->8, Z->2
+  ├── Form/Registration Number Extraction: /\b(25\d{6}|\d{8})\b/
+  └── Officer Name Token Extraction
+            │
+            ▼
+[POST /api/auth/match-id-card]
+  └── Backend Database Matching (Form No -> Digits -> Name Tokens)
+```
+
+- **Zero Server CPU Bottleneck:** OCR processing runs entirely inside the client browser via WebAssembly, ensuring instant performance without overloading backend resources.
+- **Typo-Correction Matrix:** Resolves camera glare and optical noise by automatically testing numeric substitutions for common alphanumeric ambiguities.
 
 ---
 
-### 4.5 Database Schemas & Storage Layer (`server/models/`)
+## 9. Anti-Screenshot Dual-Canvas Rendering Engine
 
-#### A. User Model (`models/User.js`)
-- `name` (String, required)
-- `email` (String, required, unique)
-- `password` (String, hashed via bcrypt)
+Document viewing inside `client/src/components/Documents/DocumentViewer.jsx` utilizes dual-canvas spotlight rendering to defeat hardware screen recording and unauthorized photography:
+
+```
+[Document Metadata & Text Content]
+                │
+                ▼
+    [Offscreen Memory Canvas]
+ (Renders 100% Sharp Text & Seals)
+                │
+                ├────────────────────────────────────────┐
+                ▼                                        ▼
+      [Main Visible Canvas]                    [Cursor Position (X, Y)]
+   (Renders 10px Blurred View)                           │
+                │                                        ▼
+                └───────────────────────────► [2D Circular Clip Path]
+                                              (130px Radius Spotlight)
+                                                         │
+                                                         ▼
+                                            [Sharp Offscreen Canvas Drawn Inside]
+                                                         │
+                                                         ▼
+                                            [Dynamic Forensic Watermark]
+                                            - Rotated -25° Diagonal Grid
+                                            - Officer Name • Form Number
+                                            - Station • ISO Timestamp
+```
+
+### Security Deterrents Implemented:
+1. **Spotlight Masking:** The document remains heavily blurred; only a 130px circle under the active mouse cursor is rendered sharp.
+2. **Forensic Watermarking:** Diagonal watermarks containing the reviewing officer's full name, registration number, and millisecond timestamp are rendered directly into the canvas pixels.
+3. **Hardware Key Interception:** Intercepts and suppresses `PrintScreen`, `Ctrl+P`, `Ctrl+S`, `Ctrl+U`, and right-click context menus.
+
+---
+
+## 10. Audit Trail, User Activity Chart & Admin Reset Purge Safeguards
+
+### Statutory Compliance & Admissibility (Section 65B Indian Evidence Act)
+
+Every user interaction creates an unalterable log in the `AuditLog` collection:
+- `user`: ObjectId of authenticated officer
+- `action`: `view`, `download`, `upload`, `edit`, `delete`, `login`, `share`
+- `resourceType`: `document`, `case`, `user`, `system`
+- `resourceId`: Identifier of the impacted entity
+- `details`: Human-readable summary of the action
+- `ipAddress`: Client IPv4/IPv6 address
+- `timestamp`: IST timestamp
+
+### Interactive Activity Chart (Times Opened per Name)
+`AuditLog.jsx` aggregates audit data to generate multi-segment activity bars ranking personnel by:
+- **Times Opened / Accessed** (sum of views, downloads, and logins)
+- **Document Views** (blue segment)
+- **Evidentiary Downloads** (purple segment)
+- **Logins** (green segment)
+- **Modifications / Edits** (amber segment)
+
+### Admin-Only Master Reset & Purge Safeguard
+- **Endpoint:** `DELETE /api/audit/reset` & `DELETE /api/audit/clear`
+- **RBAC Gate:** Restricted to `super_admin`, `station_admin`, or authorized admin badge ID `25110377`.
+- **Two-Step Safeguard Modal:** The administrator must confirm intent by explicitly typing **`RESET`** into a modal prompt before `AuditLog.deleteMany({})` is executed.
+
+---
+
+## 11. Database Schemas, Indexing & Storage Layer
+
+### 11.1 User Model (`server/models/User.js`)
+- `name` (String, required, trim)
+- `email` (String, required, unique, lowercase)
+- `password` (String, required, Bcrypt hashed)
 - `role` (Enum: `super_admin`, `station_admin`, `officer`, `court_official`, `forensic_expert`, `viewer`)
-- `station` (String — e.g. "OUTR Bhubaneswar")
-- `formNumber` / `badgeId` (String, unique, indexed)
+- `station` (String, default: "OUTR Bhubaneswar")
+- `formNumber` / `badgeId` (String, indexed)
 - `department` (String)
 - `phone` (String)
 - `isActive` (Boolean, default: true)
 - `lastLogin` (Date)
 
-#### B. Case Model (`models/Case.js`)
-- `caseId` (String, unique, format: `CASE-YYYY-XXXXX`)
+### 11.2 Case Model (`server/models/Case.js`)
+- `caseId` (String, unique, indexed — format `CASE-YYYY-XXXXX`)
 - `title` (String, required, indexed)
-- `description` (String, indexed)
+- `description` (String)
 - `crimeType` (Enum: `murder`, `rape`, `theft`, `cybercrime`, `fraud`, `kidnapping`, `assault`, `drug_trafficking`, `corruption`, `other`)
 - `status` (Enum: `open`, `under_investigation`, `charge_sheeted`, `closed`, `reopened`)
 - `priority` (Enum: `low`, `medium`, `high`, `critical`)
@@ -297,12 +491,12 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 - `createdBy` (ObjectId reference to `User`)
 - `timestamps` (createdAt, updatedAt)
 
-#### C. Document Model (`models/Document.js`)
-- `docId` (String, unique, format: `DOC-YYYY-XXXXX`)
+### 11.3 Document Model (`server/models/Document.js`)
+- `docId` (String, unique, indexed — format `DOC-YYYY-XXXXX`)
 - `title` (String, required, indexed)
 - `docType` (Enum: `fir`, `charge_sheet`, `evidence`, `investigation_report`, `court_filing`, `forensic_report`, `witness_statement`, `other`)
-- `case` (ObjectId reference to `Case`, required)
-- `filePath` (String — path to encrypted `.enc` file)
+- `case` (ObjectId reference to `Case`, required, indexed)
+- `filePath` (String — path to encrypted `.enc` binary)
 - `originalName`, `mimeType`, `fileSize` (Number)
 - `isEncrypted` (Boolean, default: true)
 - `uploadedBy` (ObjectId reference to `User`)
@@ -310,7 +504,7 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 - `ocrText` (String, indexed for full-text search)
 - `accessRestriction` (Enum: `public`, `restricted`, `confidential`, `top_secret`)
 
-#### D. AuditLog Model (`models/AuditLog.js`)
+### 11.4 AuditLog Model (`server/models/AuditLog.js`)
 - `user` (ObjectId reference to `User`, required, indexed)
 - `action` (Enum: `login`, `logout`, `view`, `download`, `upload`, `edit`, `delete`, `share`, `print_attempt`, `screenshot_attempt`, `access_denied`)
 - `resourceType` (Enum: `document`, `case`, `user`, `system`)
@@ -320,133 +514,94 @@ PRATIBANDH is an enterprise-grade digital evidence and case document repository 
 - `userAgent` (String)
 - `timestamp` (Date, default: `Date.now`, indexed)
 
-#### E. RegisteredID Model (`models/RegisteredID.js`)
-- `formNumber` (String, required, unique, indexed)
-- `name` (String, required)
-- `email` (String, required, unique)
+### 11.5 RegisteredID Model (`server/models/RegisteredID.js`)
+- `formNumber` (String, required, unique, indexed, uppercase)
+- `name` (String, required, trim)
+- `email` (String, required, unique, lowercase)
 - `role` (Enum)
 - `station` & `department` (String)
 - `phone` (String)
-- `idCardImage` (String — path to encrypted stored photo)
+- `idCardImage` (String — path to stored encrypted ID photo)
 - `addedBy` (ObjectId reference to `User`)
-- `isActive` (Boolean)
+- `isActive` (Boolean, default: true)
 
 ---
 
-### 4.6 Real-Time Communication Layer
+## 12. End-to-End Operational Execution Pipelines
 
-- **Socket.IO Integration (`server.js`):**
-  - Handles WebSocket connections for instant inter-station alerts.
-  - Client sockets join station rooms via `socket.join(stationName)`.
-  - When a collaboration request or case update occurs, server routes emit events directly to connected station rooms without requiring polling.
-
----
-
-## 5. End-to-End Data Flow & Operational Pipelines
-
-### Pipeline 1: AI ID Card Scan & OCR Login Flow
+### Pipeline 1: ID Card Optical Verification & Login
 ```
-[User presents Physical ID to Camera]
-               │
-               ▼
-[Image Captured & Processed on Canvas (Grayscale & Contrast Boost)]
-               │
-               ▼
-       [Tesseract.js OCR Engine]
-    (Extracts Form No / Badge ID / Officer Name)
-               │
-               ▼
-       [POST /api/auth/match-id-card]
-               │
-               ▼
-[Backend matches against RegisteredID Database]
- (Exact Form No -> Typo Corrected -> Name Token Match)
-               │
-               ▼
-     [Success: Match Score Computed (≥95%)]
-               │
-               ▼
-      [POST /api/auth/id-card-login]
-               │
-               ▼
- [AuditLog Generated: Action = "login"]
-               │
-               ▼
-[JWT Token Issued -> AuthContext -> Dashboard Entry]
+[Officer presents ID Card to Camera / Uploads Image]
+                         │
+                         ▼
+[Client Preprocessing Canvas: Scale to 1200px, Grayscale, Contrast Boost]
+                         │
+                         ▼
+[Tesseract.js WASM OCR extracts Form Number & Name tokens]
+                         │
+                         ▼
+[POST /api/auth/match-id-card validates credentials in Database]
+                         │
+                         ▼
+[POST /api/auth/id-card-login generates JWT token & logs audit event]
+                         │
+                         ▼
+[AuthContext updates state -> User lands on Dashboard]
 ```
 
----
-
-### Pipeline 2: Encrypted Document Upload Flow
+### Pipeline 2: Encrypted Document Upload & Ingestion
 ```
-[Officer selects PDF/Image + Metadata in DocumentUpload.jsx]
-               │
-               ▼
-[FormData multipart transmitted via POST /api/documents/upload]
-               │
-               ▼
-[Multer buffers file to server/uploads/ directory]
-               │
-               ▼
-[encryption.js reads buffer, generates 16-byte random IV, applies AES-256-CBC]
-               │
-               ▼
-[Encrypted ciphertext with IV prepended saved to server/uploads/*.pdf.enc]
-               │
-               ▼
-[Original unencrypted temporary upload deleted via fs.unlinkSync]
-               │
-               ▼
-[Document record created in MongoDB with filePath pointing to .enc]
-               │
-               ▼
-[AuditLog entry created: Action = "upload", Resource = "document"]
+[Officer fills DocumentUpload.jsx & attaches Evidence File]
+                         │
+                         ▼
+[POST /api/documents/upload streams file to Multer temp storage]
+                         │
+                         ▼
+[encryption.js generates 16-byte random IV & executes AES-256-CBC]
+                         │
+                         ▼
+[Encrypted file written to server/uploads/*.pdf.enc]
+                         │
+                         ▼
+[Original temp file deleted via fs.unlinkSync]
+                         │
+                         ▼
+[Document record created in MongoDB & AuditLog event recorded]
+```
+
+### Pipeline 3: Anti-Screenshot Spotlight Viewing
+```
+[Officer opens /documents/:id/view]
+                         │
+                         ▼
+[DocumentViewer fetches metadata & logs 'view' event to AuditLog]
+                         │
+                         ▼
+[Offscreen Canvas renders crisp text & classification seals]
+                         │
+                         ▼
+[Main Canvas renders Gaussian blurred background view]
+                         │
+                         ▼
+[Cursor movement dynamically clips 130px circle revealing sharp text]
+                         │
+                         ▼
+[Forensic watermarks baked across all pixels with Officer ID & Time]
 ```
 
 ---
 
-### Pipeline 3: Anti-Screenshot Spotlight Viewing Flow
-```
-[Officer clicks "View Document" -> Navigates to /documents/:id/view]
-               │
-               ▼
-[GET /api/documents/:id -> Returns metadata + Logs Audit Event: Action = "view"]
-               │
-               ▼
-[DocumentViewer initializes Canvas & Offscreen Canvas]
-               │
-               ▼
-[Offscreen Canvas renders sharp text, government seals, and metadata]
-               │
-               ▼
-[Main Canvas draws blurred version (10px Gaussian blur)]
-               │
-               ▼
-[Officer moves cursor -> Mouse position (X, Y) captured]
-               │
-               ▼
-[Main Canvas clips 130px radius circle at (X, Y) -> Renders sharp offscreen canvas inside]
-               │
-               ▼
-[Rotated forensic watermark baked into canvas pixels with Officer Name, Form No, and IST Timestamp]
-               │
-               ▼
-[Keyboard hooks block PrintScreen, Ctrl+P, Ctrl+S, and context menu]
-```
+## 13. Technology Selection Rationales & Architectural Justifications
 
----
-
-## 6. Why Each Technology & Design Pattern Was Chosen
-
-| Technology / Design Decision | Why Chosen Over Alternatives |
+| Technology Choice | Architectural Justification over Alternatives |
 | :--- | :--- |
-| **HTML5 Canvas over HTML DOM Document Rendering** | Standard DOM text can be inspected, copied, selected, or screenshotted in full with browser developer tools. Canvas renders direct rasterized pixels, preventing DOM inspection and allowing programmatic blur and spotlight masking. |
-| **Dual-Canvas Spotlight Rendering** | Limits visible area to a 130px circle around the cursor. Prevents full-page photographic capture via cameras or external screen recorders while remaining readable for the officer. |
-| **Dynamic Forensic Pixel Watermarking** | Stamping officer credentials and microsecond timestamps into canvas pixels ensures that even if a photo is captured using a smartphone, the exact leaking terminal and personnel can be traced instantly. |
-| **AES-256-CBC with Random Per-File IV** | Industry-standard symmetric cipher recognized by military and government intelligence standards. The random 16-byte IV ensures that two identical documents yield completely different encrypted ciphertexts. |
-| **Client-Side WASM OCR Engine** | Running Tesseract.js in WebAssembly on the client browser eliminates server CPU bottlenecks, protects privacy, and provides instantaneous character recognition from video and photo frames. |
-| **MongoDB Aggregation Pipelines for Audit Analytics** | Multi-stage aggregation pipelines (`$lookup`, `$unwind`, `$group`, `$sort`) compute real-time statistics (times opened, view counts, edit counts per officer) directly in the database engine with maximum performance. |
-| **Statutory 65B Indian Evidence Act Compliance** | Maintains an unalterable chain of custody with IP addresses, timestamps, user IDs, and action categories to ensure digital evidence is admissible in court. |
+| **React 18 + Vite** | Provides instantaneous Hot Module Replacement (HMR) during development and builds optimized, tree-shaken static bundles for lightning-fast load times on field laptops and station terminals. |
+| **TailwindCSS 3.4** | Enables rapid, utility-first styling with zero runtime CSS overhead, perfectly matching standard Indian Government design frameworks (NIC / MHA color palettes). |
+| **Dual-Canvas over DOM Text** | Standard HTML/DOM text can be easily inspected, copied, or captured via full-page screenshot extensions. Canvas rasterization prevents DOM inspection, facilitates dynamic cursor spotlight masking, and bakes watermarks directly into raw pixel data. |
+| **AES-256-CBC with Random IV** | Military-grade symmetric encryption standard. Generating a unique 16-byte random IV per file guarantees that identical files produce completely different ciphertexts, preventing pattern analysis attacks. |
+| **Client WASM OCR (Tesseract.js)** | Performing optical character recognition locally inside the browser eliminates server CPU bottlenecks, avoids streaming high-resolution images across congested network links, and ensures instant response. |
+| **MongoDB Aggregation Pipelines** | MongoDB's native aggregation framework allows computing complex multi-metric statistics (Times Opened per Name, view/download distributions) directly in the database engine with sub-millisecond execution. |
+| **Statutory 65B Compliance** | Immutable, timestamped, IP-tagged audit logging ensures that digital evidence maintained within PRATIBANDH is fully admissible in Indian judicial courts under Section 65B of the Indian Evidence Act. |
 
 ---
 
