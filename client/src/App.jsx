@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 import Layout from './components/Layout/Layout';
 import IDVerification from './components/Auth/IDVerification';
-import Login from './components/Auth/Login';
 import ManagePersonnel from './components/Admin/ManagePersonnel';
 import Dashboard from './components/Dashboard/Dashboard';
 import CaseList from './components/Cases/CaseList';
@@ -48,7 +47,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<IDVerification />} />
-      <Route path="/login/password" element={<Login />} />
       <Route path="/register" element={<Navigate to="/login" replace />} />
 
       <Route path="/" element={
