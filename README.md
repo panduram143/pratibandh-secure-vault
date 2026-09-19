@@ -7,7 +7,7 @@
 
 ## 🌟 Overview & Core Innovations
 
-PRATIBANDH is a government-grade digital evidence and case document repository built for police departments, courts, and forensic laboratories. It solves the critical risks of document tampering, unauthorized leakages, and untracked access through three core pillars
+PRATIBANDH is a government-grade digital evidence and case document repository built for police departments, courts, and forensic laboratories. It solves the critical risks of document tampering, unauthorized leakages, and untracked access through three core pillars:
 
 1. **🔦 Dynamic Spotlight Masking**: Documents rendered directly onto an HTML5 Canvas where only an elliptical/circular view radius around the user cursor is unobscured. This neutralizes full-page photographic screen captures.
 2. **🔒 Dynamic Forensic Watermarking**: User credentials (Officer Name, Badge ID, IP address, and microsecond-precision timestamps) are repeatedly stamped and baked directly into the canvas pixels. Any captured snippet immediately traces the exact originating terminal.

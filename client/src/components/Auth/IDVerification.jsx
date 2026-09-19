@@ -729,12 +729,6 @@ export default function IDVerification() {
                 >
                   <FiRefreshCw className="w-3.5 h-3.5" /> Try Scanning Again
                 </button>
-                <Link
-                  to="/login/password"
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-xl border border-gray-700 transition-colors inline-flex items-center"
-                >
-                  Direct Login
-                </Link>
               </div>
             </div>
           )}
@@ -749,17 +743,6 @@ export default function IDVerification() {
               <p className="text-xs text-gray-400">ID card & bio-data verified. Accessing Pratibandh vault...</p>
             </div>
           )}
-        </div>
-
-        {/* Direct login fallback */}
-        <div className="mt-6 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
-          <span>Need direct email / password login?</span>
-          <Link
-            to="/login/password"
-            className="text-blue-400 hover:text-blue-300 font-medium underline inline-flex items-center gap-1"
-          >
-            Direct Login <FiArrowRight className="w-3 h-3" />
-          </Link>
         </div>
       </div>
     </div>
