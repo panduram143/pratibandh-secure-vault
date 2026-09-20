@@ -15,19 +15,6 @@ PRATIBANDH is a government-grade digital evidence and case document repository b
 
 ---
 
-## 👥 Team Work Breakdown (6 Members)
-
-| Member | Focus | Key Responsibilities |
-| :--- | :--- | :--- |
-| **Member 1 (Lead)** | System Architecture & Core Integration | Full-stack wiring, API integration, master demo setup |
-| **Member 2** | Frontend & Management Modules | Case listings, case creation, dashboard metrics, filter UI |
-| **Member 3** | Security & Canvas Engine | Spotlight viewer, forensic watermark renderer, screen capture deterrents |
-| **Member 4** | Backend & Data Pipeline | MongoDB Atlas configuration, AES-256 encryption, Multer file upload, JWT RBAC |
-| **Member 5 (Remote)** | Pitch Deck & Research | SIH presentation deck (10-12 slides), crime data stats, architecture flowcharts, demo script |
-| **Member 6** | UI Polish & Multi-Station Collab | Government theme consistency, collaboration request/approval modules, QA testing |
-
----
-
 ## 🚀 Quick Start Guide
 
 ### 1. Backend Setup
@@ -57,7 +44,7 @@ npm install
 npm run dev
 ```
 
-The application will be accessible at: `(https://pratibandh-secure-vault.vercel.app/cases)`
+The application will be accessible at: `https://pratibandh-secure-vault.vercel.app/cases`
 
 ---
 
@@ -67,12 +54,3 @@ The application will be accessible at: `(https://pratibandh-secure-vault.vercel.
 - **Document Classifications**: FIR, Charge Sheet, Evidence Record, Forensic Analysis, Witness Statement, Court Filing.
 - **Cross-Station Collaboration**: Station-to-station request/approval pipelines for inter-state and jurisdictional cooperation.
 - **Full Traceability**: Comprehensive audit log view with search, filter by officer, date, or action type.
-
----
-
-## 🛡️ Presentation Tips for Internal Hackathon / SIH Jury
-
-1. **Highlight the Canvas Viewer First**: Show judges how standard screenshot or DOM inspection tools cannot extract the full file text because the text is baked into an HTML Canvas with a moving spotlight cursor.
-2. **Demonstrate Traceability**: Show that even if someone takes a photo with a smartphone camera, the forensic watermark with the Officer's Badge and current timestamp is clearly visible across every section.
-3. **Showcase Multi-Station Collaboration**: Log in as an Officer from Station A, request access to a case in Station B, log in as Station B Admin, approve the request, and show live access granting.
-4. **Point to the Audit Log**: Show that opening the file instantly produced an immutable audit entry recording who viewed it, from which IP, and at what exact time.
