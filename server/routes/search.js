@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Case = require('../models/Case');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
+const { redactVictimInfo } = require('./cases');
 
 // All search routes require authentication
 router.use(auth);
@@ -83,13 +84,14 @@ router.get('/', async (req, res) => {
                 Case.find(caseQuery)
                     .populate('createdBy', 'name formNumber badgeId station role')
                     .populate('assignedOfficers', 'name formNumber badgeId station')
+                    .populate('admittedOfficers', 'name formNumber badgeId station')
                     .sort({ updatedAt: -1, createdAt: -1 })
                     .limit(searchLimit)
                     .lean(),
                 Case.countDocuments(caseQuery)
             ]);
 
-            results.cases = caseDocs;
+            results.cases = caseDocs.map(c => redactVictimInfo(c, req.user));
             results.totalCases = totalCasesCount;
         }
 

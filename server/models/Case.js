@@ -60,6 +60,20 @@ const caseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    // 3 Dedicated Spaces for Admitted Officers (confidential clearance to view victim identity)
+    admittedOfficers: {
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        validate: [
+            function(val) {
+                return !val || val.length <= 3;
+            },
+            'A maximum of 3 admitted officers are allowed per case'
+        ],
+        default: []
+    },
     station: String,
     filingDate: Date,
     courtName: String,

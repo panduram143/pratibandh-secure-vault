@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiShield, FiUserCheck, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 
 function CaseCreate() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [officersList, setOfficersList] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -20,7 +21,23 @@ function CaseCreate() {
     victimName: '',
     victimAge: '',
     victimGender: 'male',
+    admittedOfficer1: '',
+    admittedOfficer2: '',
+    admittedOfficer3: '',
   });
+
+  useEffect(() => {
+    fetchOfficers();
+  }, []);
+
+  const fetchOfficers = async () => {
+    try {
+      const res = await api.get('/cases/officers/list');
+      setOfficersList(res.data.officers || []);
+    } catch (err) {
+      console.warn('Could not load officers list:', err);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,6 +48,12 @@ function CaseCreate() {
     setLoading(true);
 
     try {
+      const admittedOfficers = [
+        formData.admittedOfficer1,
+        formData.admittedOfficer2,
+        formData.admittedOfficer3
+      ].filter(Boolean);
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -38,6 +61,8 @@ function CaseCreate() {
         priority: formData.priority,
         station: formData.station,
         courtName: formData.courtName,
+        admittedOfficers,
+        assignedOfficers: admittedOfficers,
         suspects: formData.suspectName ? [{
           name: formData.suspectName,
           age: formData.suspectAge ? Number(formData.suspectAge) : undefined,
@@ -51,7 +76,7 @@ function CaseCreate() {
       };
 
       const res = await api.post('/cases', payload);
-      toast.success('Case created successfully');
+      toast.success('Case created successfully with admitted officer clearances');
       navigate(`/cases/${res.data._id || res.data.case?._id}`);
     } catch (err) {
       console.error('Error creating case:', err);
@@ -72,7 +97,7 @@ function CaseCreate() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-dark">Create New Case</h1>
-          <p className="text-gray-600 text-sm">Register a new formal investigation case file</p>
+          <p className="text-gray-600 text-sm">Register a new formal investigation case file with dedicated officer clearance</p>
         </div>
       </div>
 
@@ -181,6 +206,110 @@ function CaseCreate() {
           </div>
         </div>
 
+        {/* 3 Dedicated Spaces for Admitted Officers */}
+        <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-lg bg-[#0a1b38] text-[#d4af37] flex items-center justify-center font-bold">
+                <FiUserCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-dark flex items-center gap-2">
+                  Admitted Officers Clearance (3 Dedicated Spaces)
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Allocate up to 3 authorized officers who have sworn clearance for this case
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-semibold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full border border-blue-200">
+              Max 3 Officers
+            </span>
+          </div>
+
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2.5 text-xs text-amber-900">
+            <FiLock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Victim Confidentiality Protocol:</span> Only the 3 admitted officers assigned to these spaces (plus case creator & super admins) have clearance to view the victim&apos;s real name. For all other officers not admitted to this case, the victim&apos;s name will be cryptographically blacked out (<span className="font-mono bg-amber-200 px-1 py-0.5 rounded font-bold">████████</span>).
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            {/* Space 1 */}
+            <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                  Space 1 • Lead Officer
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </div>
+              <select
+                name="admittedOfficer1"
+                value={formData.admittedOfficer1}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-primary focus:border-primary"
+              >
+                <option value="">-- Select Officer 1 --</option>
+                {officersList.map((off) => (
+                  <option key={off._id} value={off._id}>
+                    {off.name} ({off.formNumber || off.badgeId || off.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Space 2 */}
+            <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                  Space 2 • Admitted Officer
+                </span>
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              </div>
+              <select
+                name="admittedOfficer2"
+                value={formData.admittedOfficer2}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-primary focus:border-primary"
+              >
+                <option value="">-- Select Officer 2 --</option>
+                {officersList
+                  .filter((off) => off._id !== formData.admittedOfficer1)
+                  .map((off) => (
+                    <option key={off._id} value={off._id}>
+                      {off.name} ({off.formNumber || off.badgeId || off.role})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Space 3 */}
+            <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                  Space 3 • Admitted Officer
+                </span>
+                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              </div>
+              <select
+                name="admittedOfficer3"
+                value={formData.admittedOfficer3}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-primary focus:border-primary"
+              >
+                <option value="">-- Select Officer 3 --</option>
+                {officersList
+                  .filter((off) => off._id !== formData.admittedOfficer1 && off._id !== formData.admittedOfficer2)
+                  .map((off) => (
+                    <option key={off._id} value={off._id}>
+                      {off.name} ({off.formNumber || off.badgeId || off.role})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h2 className="text-md font-semibold text-primary border-b border-gray-200 pb-2 mb-4">
             Primary Suspect Information (Optional)
@@ -223,17 +352,23 @@ function CaseCreate() {
         </div>
 
         <div>
-          <h2 className="text-md font-semibold text-primary border-b border-gray-200 pb-2 mb-4">
-            Primary Victim Information (Optional)
-          </h2>
+          <div className="flex items-center justify-between border-b border-gray-200 pb-2 mb-4">
+            <h2 className="text-md font-semibold text-primary">
+              Primary Victim Information (Confidential)
+            </h2>
+            <span className="text-xs bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+              <FiShield className="w-3 h-3" /> Confidential PII
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Victim Name</label>
               <input
                 type="text"
                 name="victimName"
                 value={formData.victimName}
                 onChange={handleChange}
+                placeholder="Protected victim legal name"
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white"
               />
             </div>

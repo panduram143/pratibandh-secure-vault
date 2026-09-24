@@ -166,32 +166,12 @@ router.get('/document/:docId', async (req, res) => {
     }
 });
 
-// DELETE /api/audit/reset (or /clear) - Admin Only: Delete and reset entire audit trail history
+// DELETE /api/audit/reset (or /clear) - Permanently Disabled: Audit trail is statutory and immutable
 router.delete(['/reset', '/clear'], async (req, res) => {
-    try {
-        const adminUser = req.user;
-        const isAuthorizedAdmin =
-            adminUser?.role === 'super_admin' ||
-            adminUser?.role === 'station_admin' ||
-            adminUser?.role === 'admin' ||
-            adminUser?.formNumber === '25110377' ||
-            adminUser?.badgeId === '25110377';
-
-        if (!isAuthorizedAdmin) {
-            return res.status(403).json({ msg: 'Access denied: Only authorized administrators can reset the audit trail' });
-        }
-
-        const result = await AuditLog.deleteMany({});
-
-        res.json({
-            success: true,
-            msg: `Audit trail history has been reset and cleared successfully. (${result.deletedCount} records deleted)`,
-            deletedCount: result.deletedCount
-        });
-    } catch (err) {
-        console.error('Reset audit trail error:', err);
-        res.status(500).json({ msg: 'Server error resetting audit trail' });
-    }
+    return res.status(403).json({
+        success: false,
+        msg: 'Access denied: Audit trail reset access has been permanently revoked. Statutory evidence ledger is tamper-proof and immutable.'
+    });
 });
 
 module.exports = router;
