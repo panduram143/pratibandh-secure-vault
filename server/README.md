@@ -68,7 +68,7 @@ npm run dev
 
 - User authentication with JWT
 - Role-based access control
-- File encryption (ChaCha20-Poly1305)
+- File encryption (AES-256)
 - Document version tracking
 - Case management
 - Inter-station case sharing

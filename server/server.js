@@ -21,7 +21,6 @@ const io = socketIO(server, {
 connectDB();
 
 // middleware
-app.set('trust proxy', true); // Trust the reverse proxy to get the real client IP
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
